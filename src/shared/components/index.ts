@@ -3,6 +3,7 @@ export { default as DTCard } from './DTCard'
 export { default as DTTag } from './DTTag'
 export { default as DTMessage } from './DTMessage'
 export { default as DTModal } from './DTModal'
+export { default as DTDrawer } from './DTDrawer'
 
 export type {
   DTMessageItem,
