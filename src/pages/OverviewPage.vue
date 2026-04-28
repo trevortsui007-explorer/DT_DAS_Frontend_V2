@@ -1,6 +1,11 @@
 <script setup lang="ts">
-import { DTCard, DTButton, DTTag } from '@/shared/components'
+import { ref } from 'vue'
+
+import { DTButton, DTCard, DTModal, DTTag } from '@/shared/components'
 import { message } from '@/shared/composables'
+
+const modalOpen = ref(false)
+const saving = ref(false)
 
 function handleRefresh() {
   message.loading('正在刷新总览数据...')
@@ -9,6 +14,20 @@ function handleRefresh() {
     message.clear()
     message.success('总览数据刷新成功')
   }, 1200)
+}
+
+function handleOpenModal() {
+  modalOpen.value = true
+}
+
+function handleConfirm() {
+  saving.value = true
+
+  window.setTimeout(() => {
+    saving.value = false
+    modalOpen.value = false
+    message.success('模拟保存成功')
+  }, 1000)
 }
 </script>
 
@@ -20,9 +39,15 @@ function handleRefresh() {
         <p>这里后续放运行状态、趋势图、活动流和关键指标。</p>
       </div>
 
-      <DTButton type="primary" @click="handleRefresh">
-        刷新数据
-      </DTButton>
+      <div class="page-hero__actions">
+        <DTButton @click="handleOpenModal">
+          打开弹窗
+        </DTButton>
+
+        <DTButton type="primary" @click="handleRefresh">
+          刷新数据
+        </DTButton>
+      </div>
     </section>
 
     <div class="overview-grid">
@@ -41,5 +66,32 @@ function handleRefresh() {
         <DTTag type="danger">需关注</DTTag>
       </DTCard>
     </div>
+
+    <DTModal
+      v-model:open="modalOpen"
+      title="DTModal 测试"
+      width="640px"
+      confirm-text="保存"
+      :loading="saving"
+      @confirm="handleConfirm"
+    >
+      <p class="demo-modal-text">
+        这是一个通用弹窗组件。后续新增配置、编辑配置、新增任务、导入配置都可以基于它实现。
+      </p>
+    </DTModal>
   </div>
 </template>
+
+<style scoped lang="scss">
+.page-hero__actions {
+  display: flex;
+  gap: var(--dt-space-3);
+  align-items: center;
+}
+
+.demo-modal-text {
+  margin: 0;
+  color: var(--dt-text-secondary);
+  line-height: 1.7;
+}
+</style>
