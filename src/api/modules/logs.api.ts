@@ -1,31 +1,29 @@
 import request from '@/api/request'
 
-export type TaskLogStatus = 'Pending' | 'Running' | 'Success' | 'Failed' | 'Cancelled'
+import type { PageResult } from '@/api/types/common.types'
+import type {
+  AcquisitionLogPayload,
+  NextStartRowResult,
+  TaskLogItem,
+  TaskLogPayload,
+  TaskLogQuery,
+  UpdateTaskLogPayload
+} from '@/api/types/log.types'
 
-export type TaskLogQuery = {
-  pageNo?: number
-  pageSize?: number
-  status?: TaskLogStatus
-  taskId?: number
-  startTime?: string
-  endTime?: string
+export function fetchNextStartRow(configId: number | string) {
+  return request.get<NextStartRowResult>(`/api/data-acquisition/next-row/${configId}`)
 }
 
-export type TaskLogItem = {
-  taskLogId: string
-  taskId: number
-  startTime: string
-  endTime?: string
-  status: TaskLogStatus
-  progress: number
-  message?: string
+export function createLog(data: AcquisitionLogPayload) {
+  return request.post('/api/data-acquisition/log', data)
 }
 
-export type PageResult<T> = {
-  items: T[]
-  total: number
-  pageNo: number
-  pageSize: number
+export function createTaskLog(data: TaskLogPayload) {
+  return request.post('/api/data-acquisition/task-log', data)
+}
+
+export function updateTaskLog(id: number | string, data: UpdateTaskLogPayload) {
+  return request.put(`/api/data-acquisition/task-log/${id}`, data)
 }
 
 export function fetchTaskLogs(params: TaskLogQuery = {}) {
@@ -33,18 +31,10 @@ export function fetchTaskLogs(params: TaskLogQuery = {}) {
     params: {
       pageNo: params.pageNo ?? 1,
       pageSize: params.pageSize ?? 10,
-      status: params.status,
-      taskId: params.taskId,
-      startTime: params.startTime,
-      endTime: params.endTime
+      status: params.status || undefined,
+      taskId: params.taskId || undefined,
+      startTime: params.startTime || undefined,
+      endTime: params.endTime || undefined
     }
   })
-}
-
-export function fetchTaskLogStatus(taskLogId: string) {
-  return request.get(`/api/data-acquisition/execution/${taskLogId}/status`)
-}
-
-export function fetchTaskLogDetails(taskLogId: string) {
-  return request.get(`/api/data-acquisition/execution/${taskLogId}/details`)
 }
