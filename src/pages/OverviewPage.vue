@@ -1,5 +1,15 @@
 <script setup lang="ts">
-import { DTCard, DTButton, DTTag } from '@/shared/components'
+import { DTButton, DTCard, DTTag } from '@/shared/components'
+import { message } from '@/shared/composables'
+
+function handleRefresh() {
+  const close = message.loading('正在刷新总览数据...')
+
+  window.setTimeout(() => {
+    close()
+    message.success('总览数据刷新成功')
+  }, 1200)
+}
 </script>
 
 <template>
@@ -10,7 +20,9 @@ import { DTCard, DTButton, DTTag } from '@/shared/components'
         <p>这里后续放运行状态、趋势图、活动流和关键指标。</p>
       </div>
 
-      <DTButton type="primary">刷新数据</DTButton>
+      <DTButton type="primary" @click="handleRefresh">
+        刷新数据
+      </DTButton>
     </section>
 
     <div class="overview-grid">

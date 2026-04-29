@@ -3,7 +3,8 @@ const menus = [
   { title: '总览', path: '/overview' },
   { title: '配置管理', path: '/configs' },
   { title: '任务管理', path: '/tasks' },
-  { title: '执行日志', path: '/task-logs' }
+  { title: '执行日志', path: '/task-logs' },
+  { title: '组件示例', path: '/playground' },
 ]
 </script>
 
