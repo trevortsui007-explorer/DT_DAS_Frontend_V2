@@ -9,11 +9,19 @@ import {
   DTInput,
   DTLoading,
   DTModal,
+  DTPagination,
   DTSelect,
+  DTTable,
   DTTag
 } from '@/shared/components'
 
-import type { DTSelectOption, DTSelectValue } from '@/shared/components'
+import type {
+  DTSelectOption,
+  DTSelectValue,
+  DTTableColumn,
+  DTTableRow
+} from '@/shared/components'
+
 import { message } from '@/shared/composables'
 
 const modalOpen = ref(false)
@@ -28,6 +36,65 @@ const statusOptions: DTSelectOption[] = [
   { label: '启用', value: 'enabled' },
   { label: '禁用', value: 'disabled' }
 ]
+
+const tablePage = ref(1)
+const tablePageSize = ref(10)
+
+const tableColumns: DTTableColumn[] = [
+  {
+    key: 'name',
+    title: '配置名称',
+    minWidth: 180
+  },
+  {
+    key: 'targetTable',
+    title: '目标表',
+    minWidth: 160
+  },
+  {
+    key: 'status',
+    title: '状态',
+    width: 100,
+    align: 'center'
+  },
+  {
+    key: 'lastRunTime',
+    title: '最近执行时间',
+    minWidth: 180
+  }
+]
+
+const tableData: DTTableRow[] = [
+  {
+    id: 1,
+    name: 'MES 数据采集配置',
+    targetTable: 'DA_MES_Data',
+    status: 'enabled',
+    lastRunTime: '2026-04-29 08:30:00'
+  },
+  {
+    id: 2,
+    name: 'WIP Lot 数据配置',
+    targetTable: 'QA_UBWipLot',
+    status: 'enabled',
+    lastRunTime: '2026-04-29 09:10:00'
+  },
+  {
+    id: 3,
+    name: 'Scrap 数据配置',
+    targetTable: 'DA_Scrap_Data',
+    status: 'disabled',
+    lastRunTime: '-'
+  }
+]
+
+function handleTableRowClick(row: DTTableRow) {
+  message.info(`点击了：${row.name}`)
+}
+
+function handlePaginationChange(payload: { page: number; pageSize: number }) {
+  message.info(`分页变化：第 ${payload.page} 页 / ${payload.pageSize} 条`)
+}
 
 function handleRefresh() {
   message.loading('正在刷新总览数据...')
@@ -146,6 +213,43 @@ function handleSearch() {
         />
       </div>
     </DTModal>
+    
+    <DTCard title="表格组件测试">
+      <div class="table-demo">
+        <DTTable
+          :columns="tableColumns"
+          :data="tableData"
+          row-key="id"
+          height="320px"
+          @row-click="handleTableRowClick"
+        >
+          <template #cell-status="{ value }">
+            <DTTag :type="value === 'enabled' ? 'success' : 'info'">
+              {{ value === 'enabled' ? '启用' : '禁用' }}
+            </DTTag>
+          </template>
+
+          <template #actions="{ row }">
+            <div class="table-actions">
+              <DTButton size="sm" @click.stop="message.info(`查看：${row.name}`)">
+                查看
+              </DTButton>
+
+              <DTButton size="sm" type="primary" @click.stop="message.success(`编辑：${row.name}`)">
+                编辑
+              </DTButton>
+            </div>
+          </template>
+        </DTTable>
+
+        <DTPagination
+          v-model:page="tablePage"
+          v-model:page-size="tablePageSize"
+          :total="36"
+          @change="handlePaginationChange"
+        />
+      </div>
+    </DTCard>
 
     <DTDrawer
       v-model:open="drawerOpen"
@@ -272,5 +376,17 @@ function handleSearch() {
   min-height: 220px;
   border: 1px dashed var(--dt-border-subtle);
   border-radius: var(--dt-radius-lg);
+}
+
+.table-demo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dt-space-4);
+}
+
+.table-actions {
+  display: inline-flex;
+  gap: var(--dt-space-2);
+  justify-content: flex-end;
 }
 </style>

@@ -8,6 +8,8 @@ export { default as DTInput } from './DTInput'
 export { default as DTSelect } from './DTSelect'
 export { default as DTEmpty } from './DTEmpty'
 export { default as DTLoading } from './DTLoading'
+export { default as DTTable } from './DTTable'
+export { default as DTPagination } from './DTPagination'
 
 export type {
   DTMessageItem,
@@ -19,3 +21,8 @@ export type {
   DTSelectOption,
   DTSelectValue
 } from './DTSelect'
+
+export type {
+  DTTableColumn,
+  DTTableRow
+} from './DTTable'
