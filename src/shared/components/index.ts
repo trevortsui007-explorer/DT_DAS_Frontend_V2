@@ -11,6 +11,11 @@ export { default as DTLoading } from './DTLoading'
 export { default as DTTable } from './DTTable'
 export { default as DTPagination } from './DTPagination'
 
+export {
+  DTForm,
+  DTFormItem
+} from './DTForm'
+
 export type {
   DTMessageItem,
   DTMessageOptions,
@@ -26,3 +31,9 @@ export type {
   DTTableColumn,
   DTTableRow
 } from './DTTable'
+
+export type {
+  DTFormContext,
+  DTFormLabelPosition,
+  DTFormSize
+} from './DTForm'

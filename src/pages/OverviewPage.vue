@@ -6,6 +6,8 @@ import {
   DTCard,
   DTDrawer,
   DTEmpty,
+  DTForm,
+  DTFormItem,
   DTInput,
   DTLoading,
   DTModal,
@@ -192,26 +194,46 @@ function handleSearch() {
 
     <DTModal
       v-model:open="modalOpen"
-      title="DTModal 测试"
-      width="640px"
+      title="DTForm 测试"
+      width="680px"
       confirm-text="保存"
       :loading="saving"
       @confirm="handleConfirm"
     >
-      <div class="modal-form">
-        <DTInput
-          v-model="configName"
-          placeholder="请输入配置名称"
-          clearable
-        />
+      <DTForm label-position="top">
+        <DTFormItem
+          label="配置名称"
+          required
+          :error="!configName ? '配置名称不能为空' : ''"
+        >
+          <DTInput
+            v-model="configName"
+            placeholder="请输入配置名称"
+            clearable
+            :error="!configName"
+          />
+        </DTFormItem>
 
-        <DTSelect
-          v-model="configStatus"
-          :options="statusOptions"
-          placeholder="请选择状态"
-          clearable
-        />
-      </div>
+        <DTFormItem
+          label="状态"
+          help="用于控制配置是否参与任务执行。"
+        >
+          <DTSelect
+            v-model="configStatus"
+            :options="statusOptions"
+            placeholder="请选择状态"
+            clearable
+          />
+        </DTFormItem>
+
+        <DTFormItem label="文件路径">
+          <DTInput
+            v-model="configName"
+            placeholder="请输入文件路径"
+            prefix-text="路径"
+          />
+        </DTFormItem>
+      </DTForm>
     </DTModal>
     
     <DTCard title="表格组件测试">
@@ -296,6 +318,32 @@ function handleSearch() {
               </DTTag>
             </div>
           </div>
+        </DTCard>
+
+        <DTCard title="编辑信息">
+          <DTForm
+            label-position="left"
+            label-width="88px"
+          >
+            <DTFormItem
+              label="配置名称"
+              required
+            >
+              <DTInput
+                v-model="configName"
+                placeholder="请输入配置名称"
+                clearable
+              />
+            </DTFormItem>
+
+            <DTFormItem label="状态">
+              <DTSelect
+                v-model="configStatus"
+                :options="statusOptions"
+                placeholder="请选择状态"
+              />
+            </DTFormItem>
+          </DTForm>
         </DTCard>
       </div>
     </DTDrawer>
