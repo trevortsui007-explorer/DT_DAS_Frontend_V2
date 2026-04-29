@@ -1,12 +1,31 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import { DTButton, DTCard, DTDrawer, DTModal, DTTag } from '@/shared/components'
+import {
+  DTButton,
+  DTCard,
+  DTDrawer,
+  DTInput,
+  DTModal,
+  DTSelect,
+  DTTag
+} from '@/shared/components'
+
+import type { DTSelectOption, DTSelectValue } from '@/shared/components'
 import { message } from '@/shared/composables'
 
 const modalOpen = ref(false)
 const drawerOpen = ref(false)
 const saving = ref(false)
+
+const configName = ref('')
+const configStatus = ref<DTSelectValue | ''>('')
+
+const statusOptions: DTSelectOption[] = [
+  { label: '全部状态', value: 'all' },
+  { label: '启用', value: 'enabled' },
+  { label: '禁用', value: 'disabled' }
+]
 
 function handleRefresh() {
   message.loading('正在刷新总览数据...')
@@ -35,6 +54,10 @@ function handleConfirm() {
     message.success('模拟保存成功')
   }, 1000)
 }
+
+function handleSearch() {
+  message.info(`搜索条件：${configName.value || '未输入'} / ${configStatus.value || '未选择'}`)
+}
 </script>
 
 <template>
@@ -59,6 +82,27 @@ function handleConfirm() {
         </DTButton>
       </div>
     </section>
+
+    <DTCard title="表单组件测试">
+      <div class="form-demo">
+        <DTInput
+          v-model="configName"
+          placeholder="请输入配置名称"
+          clearable
+        />
+
+        <DTSelect
+          v-model="configStatus"
+          :options="statusOptions"
+          placeholder="请选择状态"
+          clearable
+        />
+
+        <DTButton type="primary" @click="handleSearch">
+          查询
+        </DTButton>
+      </div>
+    </DTCard>
 
     <div class="overview-grid">
       <DTCard title="今日采集任务">
@@ -85,9 +129,20 @@ function handleConfirm() {
       :loading="saving"
       @confirm="handleConfirm"
     >
-      <p class="demo-text">
-        这是一个通用弹窗组件。后续新增配置、编辑配置、新增任务、导入配置都可以基于它实现。
-      </p>
+      <div class="modal-form">
+        <DTInput
+          v-model="configName"
+          placeholder="请输入配置名称"
+          clearable
+        />
+
+        <DTSelect
+          v-model="configStatus"
+          :options="statusOptions"
+          placeholder="请选择状态"
+          clearable
+        />
+      </div>
     </DTModal>
 
     <DTDrawer
@@ -104,29 +159,37 @@ function handleConfirm() {
       </template>
 
       <div class="drawer-demo">
+        <DTCard title="筛选条件">
+          <div class="modal-form">
+            <DTInput
+              v-model="configName"
+              placeholder="请输入配置名称"
+              clearable
+            />
+
+            <DTSelect
+              v-model="configStatus"
+              :options="statusOptions"
+              placeholder="请选择状态"
+              clearable
+            />
+          </div>
+        </DTCard>
+
         <DTCard title="配置详情">
           <div class="detail-list">
             <div class="detail-row">
               <span>配置名称</span>
-              <strong>MES 数据采集配置</strong>
-            </div>
-
-            <div class="detail-row">
-              <span>目标表</span>
-              <strong>DA_MES_Data</strong>
+              <strong>{{ configName || 'MES 数据采集配置' }}</strong>
             </div>
 
             <div class="detail-row">
               <span>状态</span>
-              <DTTag type="success">启用</DTTag>
+              <DTTag type="success">
+                {{ configStatus || '启用' }}
+              </DTTag>
             </div>
           </div>
-        </DTCard>
-
-        <DTCard title="说明">
-          <p class="demo-text">
-            后续配置详情、任务详情、执行日志详情，都可以基于这个抽屉组件实现。
-          </p>
         </DTCard>
       </div>
     </DTDrawer>
@@ -140,10 +203,17 @@ function handleConfirm() {
   align-items: center;
 }
 
-.demo-text {
-  margin: 0;
-  color: var(--dt-text-secondary);
-  line-height: 1.7;
+.form-demo {
+  display: grid;
+  grid-template-columns: minmax(0, 240px) minmax(0, 180px) auto;
+  gap: var(--dt-space-3);
+  align-items: center;
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dt-space-4);
 }
 
 .drawer-demo {
