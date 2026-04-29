@@ -24,7 +24,7 @@ import type {
   DTTableRow
 } from '@/shared/components'
 
-import { message } from '@/shared/composables'
+import { confirm, message } from '@/shared/composables'
 
 const modalOpen = ref(false)
 const drawerOpen = ref(false)
@@ -107,6 +107,23 @@ function handleRefresh() {
   }, 1200)
 }
 
+async function handleDeleteTest() {
+  const ok = await confirm({
+    title: '确认删除配置',
+    content: '删除后不可恢复，是否继续？',
+    type: 'danger',
+    confirmText: '删除',
+    cancelText: '取消'
+  })
+
+  if (!ok) {
+    message.info('已取消删除')
+    return
+  }
+
+  message.success('模拟删除成功')
+}
+
 function handleOpenModal() {
   modalOpen.value = true
 }
@@ -146,6 +163,10 @@ function handleSearch() {
 
         <DTButton @click="handleOpenModal">
           打开弹窗
+        </DTButton>
+
+        <DTButton type="danger" @click="handleDeleteTest">
+          删除测试
         </DTButton>
 
         <DTButton type="primary" @click="handleRefresh">

@@ -10,6 +10,7 @@ export { default as DTEmpty } from './DTEmpty'
 export { default as DTLoading } from './DTLoading'
 export { default as DTTable } from './DTTable'
 export { default as DTPagination } from './DTPagination'
+export { default as DTConfirm } from './DTConfirm'
 
 export {
   DTForm,
@@ -37,3 +38,9 @@ export type {
   DTFormLabelPosition,
   DTFormSize
 } from './DTForm'
+
+export type {
+  DTConfirmOptions,
+  DTConfirmResult,
+  DTConfirmType
+} from './DTConfirm'
