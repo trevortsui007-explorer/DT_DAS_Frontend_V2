@@ -5,7 +5,9 @@ import {
   DTButton,
   DTCard,
   DTDrawer,
+  DTEmpty,
   DTInput,
+  DTLoading,
   DTModal,
   DTSelect,
   DTTag
@@ -193,6 +195,24 @@ function handleSearch() {
         </DTCard>
       </div>
     </DTDrawer>
+    <DTCard title="状态组件测试">
+      <div class="state-demo">
+        <DTEmpty
+          title="暂无执行日志"
+          description="当前筛选条件下没有找到任务执行记录。"
+        >
+          <template #action>
+            <DTButton type="primary" size="sm">
+              重新加载
+            </DTButton>
+          </template>
+        </DTEmpty>
+
+        <div class="loading-demo">
+          <DTLoading text="正在加载任务数据..." />
+        </div>
+      </div>
+    </DTCard>
   </div>
 </template>
 
@@ -239,5 +259,18 @@ function handleSearch() {
 .detail-row strong {
   color: var(--dt-text-primary);
   font-weight: 600;
+}
+
+.state-demo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--dt-space-4);
+}
+
+.loading-demo {
+  position: relative;
+  min-height: 220px;
+  border: 1px dashed var(--dt-border-subtle);
+  border-radius: var(--dt-radius-lg);
 }
 </style>

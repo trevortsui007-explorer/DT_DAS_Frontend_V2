@@ -6,6 +6,8 @@ export { default as DTModal } from './DTModal'
 export { default as DTDrawer } from './DTDrawer'
 export { default as DTInput } from './DTInput'
 export { default as DTSelect } from './DTSelect'
+export { default as DTEmpty } from './DTEmpty'
+export { default as DTLoading } from './DTLoading'
 
 export type {
   DTMessageItem,
