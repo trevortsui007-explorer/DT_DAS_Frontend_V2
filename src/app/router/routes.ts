@@ -7,6 +7,7 @@ import ConfigsPage from '@/pages/ConfigsPage.vue'
 import TasksPage from '@/pages/TasksPage.vue'
 import TaskLogsPage from '@/pages/TaskLogsPage.vue'
 import NotFoundPage from '@/pages/NotFoundPage.vue'
+import ComponentPlaygroundPage from '@/pages/ComponentPlaygroundPage.vue'
 
 export const routes: RouteRecordRaw[] = [
   {
@@ -49,7 +50,16 @@ export const routes: RouteRecordRaw[] = [
           title: '执行日志',
           theme: 'default'
         }
-      }
+      },
+      {
+        path: 'playground',
+        name: 'ComponentPlayground',
+        component: ComponentPlaygroundPage,
+        meta: {
+          title: '组件示例',
+          theme: 'default'
+        }
+      },
     ]
   },
   {
