@@ -19,7 +19,8 @@ const {
   statusOptions,
   filteredConfigs,
   loadConfigs,
-  toggleConfigStatus
+  toggleConfigStatus,
+  resetFilters
 } = useConfigsList()
 
 onMounted(() => {
@@ -31,17 +32,17 @@ function handleCreate() {
 }
 
 function handleView(row: FileConfigItem) {
-  message.info(`查看配置：${row.name || row.configName || row.id}`)
+  message.info(`查看配置：${row.name}`)
 }
 
 function handleEdit(row: FileConfigItem) {
-  message.info(`编辑配置：${row.name || row.configName || row.id}`)
+  message.info(`编辑配置：${row.name}`)
 }
 
 async function handleToggle(row: FileConfigItem) {
   const ok = await confirm({
     title: row.isEnabled ? '确认禁用配置' : '确认启用配置',
-    content: `配置：${row.name || row.configName || row.id}`,
+    content: `配置：${row.name}`,
     type: row.isEnabled ? 'warning' : 'success',
     confirmText: row.isEnabled ? '禁用' : '启用'
   })
@@ -52,6 +53,11 @@ async function handleToggle(row: FileConfigItem) {
 
   message.success('状态更新成功')
 }
+
+function handleReset() {
+  resetFilters()
+  message.info('筛选条件已重置')
+}
 </script>
 
 <template>
@@ -59,7 +65,7 @@ async function handleToggle(row: FileConfigItem) {
     <div class="page-toolbar">
       <div>
         <h2>配置管理</h2>
-        <p>当前页面已接入 features/configs 骨架，后续继续迁移新增、编辑、详情、导入等能力。</p>
+        <p>当前页面基于标准后端字段直接渲染，不再使用 mapper。</p>
       </div>
     </div>
 
@@ -69,6 +75,7 @@ async function handleToggle(row: FileConfigItem) {
         v-model:status="status"
         :status-options="statusOptions"
         @search="loadConfigs"
+        @reset="handleReset"
         @refresh="loadConfigs"
         @create="handleCreate"
       />

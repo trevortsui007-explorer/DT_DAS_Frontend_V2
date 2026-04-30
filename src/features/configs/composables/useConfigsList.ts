@@ -31,9 +31,14 @@ export function useConfigsList() {
   ]
 
   const filteredConfigs = computed(() => {
+    const keywordValue = keyword.value.trim().toLowerCase()
+
     return configs.value.filter((item) => {
-      const name = item.name || item.configName || ''
-      const keywordMatched = !keyword.value || name.includes(keyword.value)
+      const keywordMatched =
+        !keywordValue ||
+        item.name.toLowerCase().includes(keywordValue) ||
+        item.sourcePath.toLowerCase().includes(keywordValue) ||
+        item.targetTable.toLowerCase().includes(keywordValue)
 
       const statusMatched =
         !status.value ||
@@ -55,18 +60,19 @@ export function useConfigsList() {
     }
   }
 
-    async function toggleConfigStatus(row: FileConfigItem) {
-    if (row.id === undefined || row.id === null) {
-        throw new Error('配置 ID 不存在，无法切换状态')
-    }
-
+  async function toggleConfigStatus(row: FileConfigItem) {
     await setConfigStatus({
-        ids: [row.id],
-        isEnabled: !row.isEnabled
+      ids: [row.id],
+      isEnabled: !row.isEnabled
     })
 
     await loadConfigs()
-    }
+  }
+
+  function resetFilters() {
+    keyword.value = ''
+    status.value = ''
+  }
 
   return {
     loading,
@@ -76,6 +82,7 @@ export function useConfigsList() {
     configs,
     filteredConfigs,
     loadConfigs,
-    toggleConfigStatus
+    toggleConfigStatus,
+    resetFilters
   }
 }

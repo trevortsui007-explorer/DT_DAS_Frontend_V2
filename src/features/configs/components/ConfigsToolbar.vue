@@ -12,6 +12,7 @@ const emit = defineEmits<{
   'update:keyword': [value: string]
   'update:status': [value: DTSelectValue | '']
   search: []
+  reset: []
   create: []
   refresh: []
 }>()
@@ -22,7 +23,7 @@ const emit = defineEmits<{
     <div class="configs-toolbar__filters">
       <DTInput
         :model-value="keyword"
-        placeholder="请输入配置名称"
+        placeholder="请输入配置名称 / 源路径 / 目标表"
         clearable
         @update:model-value="emit('update:keyword', String($event))"
       />
@@ -37,6 +38,10 @@ const emit = defineEmits<{
 
       <DTButton type="primary" @click="emit('search')">
         查询
+      </DTButton>
+
+      <DTButton @click="emit('reset')">
+        重置
       </DTButton>
 
       <DTButton @click="emit('refresh')">
@@ -61,15 +66,21 @@ const emit = defineEmits<{
 
 .configs-toolbar__filters {
   display: grid;
-  grid-template-columns: minmax(0, 240px) minmax(0, 180px) auto auto;
+  grid-template-columns: minmax(0, 280px) minmax(0, 180px) auto auto auto;
   gap: var(--dt-space-3);
   align-items: center;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1120px) {
+  .configs-toolbar__filters {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 180px) auto auto auto;
+    width: 100%;
+  }
+}
+
+@media (max-width: 760px) {
   .configs-toolbar__filters {
     grid-template-columns: 1fr;
-    width: 100%;
   }
 }
 </style>

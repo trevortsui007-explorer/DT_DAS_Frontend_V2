@@ -24,7 +24,7 @@ const columns: DTTableColumn[] = [
   {
     key: 'sourcePath',
     title: '源路径',
-    minWidth: 220
+    minWidth: 240
   },
   {
     key: 'targetTable',
@@ -36,12 +36,13 @@ const columns: DTTableColumn[] = [
     title: '状态',
     width: 100,
     align: 'center'
+  },
+  {
+    key: 'updateTime',
+    title: '更新时间',
+    minWidth: 180
   }
 ]
-
-function getDisplayName(row: FileConfigItem) {
-  return row.name || row.configName || '-'
-}
 
 function handleAction(
   type: 'view' | 'edit' | 'toggle',
@@ -70,14 +71,14 @@ function handleAction(
     row-key="id"
     :loading="loading"
   >
-    <template #cell-name="{ row }">
-      {{ getDisplayName(row as FileConfigItem) }}
-    </template>
-
     <template #cell-isEnabled="{ value }">
       <DTTag :type="value ? 'success' : 'info'">
         {{ value ? '启用' : '禁用' }}
       </DTTag>
+    </template>
+
+    <template #cell-updateTime="{ value }">
+      {{ value || '-' }}
     </template>
 
     <template #actions="{ row }">
@@ -92,10 +93,10 @@ function handleAction(
 
         <DTButton
           size="sm"
-          :type="row.isEnabled ? 'warning' : 'success'"
+          :type="(row as FileConfigItem).isEnabled ? 'warning' : 'success'"
           @click.stop="handleAction('toggle', row)"
         >
-          {{ row.isEnabled ? '禁用' : '启用' }}
+          {{ (row as FileConfigItem).isEnabled ? '禁用' : '启用' }}
         </DTButton>
       </div>
     </template>
