@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 
 import { DTCard } from '@/shared/components'
 import { confirm, message } from '@/shared/composables'
 
 import {
+  ConfigDetailDrawer,
   ConfigsTable,
   ConfigsToolbar,
   useConfigsList
@@ -23,6 +24,9 @@ const {
   resetFilters
 } = useConfigsList()
 
+const detailOpen = ref(false)
+const currentConfig = ref<FileConfigItem | null>(null)
+
 onMounted(() => {
   loadConfigs()
 })
@@ -33,6 +37,8 @@ function handleCreate() {
 
 function handleView(row: FileConfigItem) {
   message.info(`查看配置：${row.name}`)
+  currentConfig.value = row
+  detailOpen.value = true
 }
 
 function handleEdit(row: FileConfigItem) {
@@ -62,12 +68,6 @@ function handleReset() {
 
 <template>
   <div class="page">
-    <div class="page-toolbar">
-      <div>
-        <h2>配置管理</h2>
-        <p>当前页面基于标准后端字段直接渲染，不再使用 mapper。</p>
-      </div>
-    </div>
 
     <DTCard>
       <ConfigsToolbar
@@ -90,5 +90,11 @@ function handleReset() {
         @toggle="handleToggle"
       />
     </DTCard>
+
+    <ConfigDetailDrawer
+      v-model:open="detailOpen"
+      :config="currentConfig"
+      @edit="handleEdit"
+    />
   </div>
 </template>
