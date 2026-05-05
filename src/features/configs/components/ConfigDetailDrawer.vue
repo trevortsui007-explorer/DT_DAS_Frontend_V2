@@ -34,7 +34,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
-  edit: [row: FileConfigItem]
+  edit: [row: FileConfigDetail | FileConfigItem]
 }>()
 
 const loading = ref(false)
@@ -56,8 +56,21 @@ const statusType = computed(() => {
   return displayConfig.value.isEnabled ? 'success' : 'info'
 })
 
+const fieldMappingRows = computed(() => {
+  const mappings = detail.value?.fieldMappings
+
+  if (!mappings) return []
+
+  return Object.entries(mappings).map(([sourceField, targetField]) => {
+    return {
+      sourceField,
+      targetField
+    }
+  })
+})
+
 const hasFieldMappings = computed(() => {
-  return Boolean(detail.value?.fieldMappings?.length)
+  return fieldMappingRows.value.length > 0
 })
 
 const fieldMappingColumns: DTTableColumn[] = [
@@ -118,7 +131,7 @@ function handleEdit() {
     @update:open="handleClose"
   >
     <template #description>
-      查看当前采集配置的基础信息和高级配置。
+      查看当前采集配置的基础信息、字段映射和后处理配置。
     </template>
 
     <div v-if="displayConfig" class="config-detail">
@@ -144,13 +157,13 @@ function handleEdit() {
             </div>
 
             <div class="detail-row">
-              <span class="detail-label">目标表</span>
-              <strong class="detail-value">{{ displayConfig.targetTable || '-' }}</strong>
+              <span class="detail-label">文件类型</span>
+              <strong class="detail-value">{{ displayConfig.fileType || '-' }}</strong>
             </div>
 
             <div class="detail-row">
-              <span class="detail-label">文件类型</span>
-              <strong class="detail-value">{{ displayConfig.fileType || '-' }}</strong>
+              <span class="detail-label">目标表</span>
+              <strong class="detail-value">{{ displayConfig.targetTable || '-' }}</strong>
             </div>
 
             <div class="detail-row detail-row--column">
@@ -160,7 +173,7 @@ function handleEdit() {
           </div>
         </DTCard>
 
-        <DTCard title="高级配置">
+        <DTCard title="文件读取配置">
           <div class="detail-list">
             <div class="detail-row">
               <span class="detail-label">文件名规则</span>
@@ -173,10 +186,27 @@ function handleEdit() {
             </div>
 
             <div class="detail-row">
-              <span class="detail-label">起始行</span>
+              <span class="detail-label">数据起始行</span>
               <strong class="detail-value">{{ detail?.startRow ?? '-' }}</strong>
             </div>
           </div>
+        </DTCard>
+
+        <DTCard title="字段映射">
+          <DTTable
+            v-if="hasFieldMappings"
+            :columns="fieldMappingColumns"
+            :data="fieldMappingRows as DTTableRow[]"
+            row-key="sourceField"
+            empty-text="暂无字段映射"
+          />
+
+          <DTEmpty
+            v-else
+            size="sm"
+            title="暂无字段映射"
+            description="当前配置还没有返回字段映射信息。"
+          />
         </DTCard>
 
         <DTCard title="后处理配置">
@@ -187,7 +217,7 @@ function handleEdit() {
             </div>
 
             <div class="detail-row">
-              <span class="detail-label">后处理表</span>
+              <span class="detail-label">后处理表名</span>
               <strong class="detail-value">{{ detail?.postTableName || '-' }}</strong>
             </div>
 
@@ -199,6 +229,16 @@ function handleEdit() {
             <div class="detail-row">
               <span class="detail-label">服务名称</span>
               <strong class="detail-value">{{ detail?.serviceName || '-' }}</strong>
+            </div>
+
+            <div class="detail-row">
+              <span class="detail-label">标识字段</span>
+              <strong class="detail-value">{{ detail?.flag || '-' }}</strong>
+            </div>
+
+            <div class="detail-row">
+              <span class="detail-label">标识名称</span>
+              <strong class="detail-value">{{ detail?.flagName || '-' }}</strong>
             </div>
           </div>
         </DTCard>
@@ -221,23 +261,6 @@ function handleEdit() {
               <strong class="detail-value">{{ displayConfig.updateTime || '-' }}</strong>
             </div>
           </div>
-        </DTCard>
-
-        <DTCard title="字段映射">
-          <DTTable
-            v-if="hasFieldMappings"
-            :columns="fieldMappingColumns"
-            :data="detail?.fieldMappings as DTTableRow[]"
-            row-key="sourceField"
-            empty-text="暂无字段映射"
-          />
-
-          <DTEmpty
-            v-else
-            size="sm"
-            title="暂无字段映射"
-            description="当前配置还没有返回字段映射信息。"
-          />
         </DTCard>
 
         <div class="detail-actions">

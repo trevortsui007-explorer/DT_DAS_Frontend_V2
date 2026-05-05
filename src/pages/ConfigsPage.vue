@@ -118,12 +118,6 @@ function handleFormOpenChange(value: boolean) {
 
 <template>
   <div class="page">
-    <div class="page-toolbar">
-      <div>
-        <h2>配置管理</h2>
-        <p>当前页面基于标准后端字段直接渲染，不再使用 mapper。</p>
-      </div>
-    </div>
 
     <DTCard>
       <ConfigsToolbar

@@ -15,11 +15,13 @@ export type FileConfigFieldMapping = {
   targetField: string
 }
 
+export type FileConfigFieldMappingJson = Record<string, string>
+
 export type FileConfigDetail = FileConfigItem & {
   fileNamePattern?: string
   headerRow?: number
   startRow?: number
-  fieldMappings?: FileConfigFieldMapping[]
+  fieldMappings?: FileConfigFieldMappingJson
   extFields?: Record<string, unknown> | null
 
   postProcessingType?: number
@@ -34,10 +36,14 @@ export type CreateFileConfigPayload = {
   name: string
   sourcePath: string
   targetTable: string
+
   fileNamePattern?: string
   fileType?: string
   headerRow?: number
   startRow?: number
+  fieldMappings?: FileConfigFieldMappingJson
+  extFields?: Record<string, unknown> | null
+
   isEnabled?: boolean
   description?: string
 

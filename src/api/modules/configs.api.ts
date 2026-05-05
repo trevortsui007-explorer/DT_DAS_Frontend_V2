@@ -4,6 +4,7 @@ import type {
   CreateFileConfigPayload,
   FileConfigDetail,
   FileConfigFieldMapping,
+  FileConfigFieldMappingJson,
   FileConfigItem,
   SetConfigStatusPayload,
   UpdateFileConfigPayload
@@ -18,9 +19,10 @@ type RawFileConfigItem = {
   fileType?: string
   headerRow?: number
   startRow?: number
-  fieldMappings?: string | Record<string, string> | FileConfigFieldMapping[]
+  fieldMappings?: string | FileConfigFieldMappingJson | FileConfigFieldMapping[]
   extFields?: Record<string, unknown> | null
   isEnabled: boolean
+  description?: string
   postProcessingType?: number
   postTableName?: string
   procedureName?: string
@@ -33,30 +35,30 @@ type RawFileConfigItem = {
 
 function parseFieldMappings(
   value: RawFileConfigItem['fieldMappings']
-): FileConfigFieldMapping[] {
-  if (!value) return []
-
-  if (Array.isArray(value)) {
-    return value
-  }
+): FileConfigFieldMappingJson {
+  if (!value) return {}
 
   if (typeof value === 'string') {
     try {
-      const parsed = JSON.parse(value) as Record<string, string>
+      const parsed = JSON.parse(value) as FileConfigFieldMappingJson
 
-      return Object.entries(parsed).map(([sourceField, targetField]) => ({
-        sourceField,
-        targetField
-      }))
+      return parsed || {}
     } catch {
-      return []
+      return {}
     }
   }
 
-  return Object.entries(value).map(([sourceField, targetField]) => ({
-    sourceField,
-    targetField
-  }))
+  if (Array.isArray(value)) {
+    return value.reduce<FileConfigFieldMappingJson>((result, item) => {
+      if (item.sourceField && item.targetField) {
+        result[item.sourceField] = item.targetField
+      }
+
+      return result
+    }, {})
+  }
+
+  return value
 }
 
 function normalizeConfigItem(item: RawFileConfigItem): FileConfigItem {
@@ -67,6 +69,7 @@ function normalizeConfigItem(item: RawFileConfigItem): FileConfigItem {
     targetTable: item.tableName || '',
     fileType: item.fileType,
     isEnabled: item.isEnabled,
+    description: item.description,
     createTime: item.createTime,
     updateTime: item.updateTime
   }
@@ -99,6 +102,9 @@ function normalizeCreatePayload(data: CreateFileConfigPayload) {
     headerRow: data.headerRow,
     startRow: data.startRow,
     isEnabled: data.isEnabled,
+    description: data.description,
+    fieldMappings: data.fieldMappings,
+    extFields: data.extFields,
     postProcessingType: data.postProcessingType,
     postTableName: data.postTableName,
     procedureName: data.procedureName,
