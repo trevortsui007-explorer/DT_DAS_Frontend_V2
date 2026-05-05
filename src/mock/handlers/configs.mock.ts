@@ -3,35 +3,77 @@ import type { AxiosRequestConfig } from 'axios'
 const mockConfigList = [
   {
     id: 22,
-    name: 'MES 数据采集配置',
-    sourcePath: '\\\\server\\mes\\data',
-    targetTable: 'DA_MES_Data',
+    eqName: 'Mason_Test',
+    tableName: 'MasonElectricMeasurementLogFiles_BAK',
+    filePathPattern: 'D://Desktop/B14/{yyyy}-{M}/',
+    fileType: '.csv',
     isEnabled: true,
-    description: '每日采集 MES 文件数据',
-    createTime: '2026-04-20 08:00:00',
-    updateTime: '2026-04-28 09:30:00'
+    createTime: '2026-04-22T17:30:26.5000000+08:00'
   },
   {
     id: 23,
-    name: 'WIP Lot 数据配置',
-    sourcePath: '\\\\server\\wip\\lot',
-    targetTable: 'QA_UBWipLot',
+    eqName: 'WIP Lot 数据配置',
+    tableName: 'QA_UBWipLot',
+    filePathPattern: '\\\\server\\wip\\lot',
+    fileType: '.xlsx',
     isEnabled: true,
-    description: 'WIP Lot 数据同步',
-    createTime: '2026-04-21 08:00:00',
-    updateTime: '2026-04-28 10:15:00'
+    createTime: '2026-04-21T08:00:00.0000000+08:00'
   },
   {
     id: 24,
-    name: 'Scrap 数据配置',
-    sourcePath: '\\\\server\\scrap',
-    targetTable: 'DA_Scrap_Data',
+    eqName: 'Scrap 数据配置',
+    tableName: 'DA_Scrap_Data',
+    filePathPattern: '\\\\server\\scrap',
+    fileType: '.xlsx',
     isEnabled: false,
-    description: '报废数据采集配置',
-    createTime: '2026-04-22 08:00:00',
-    updateTime: '2026-04-28 11:20:00'
+    createTime: '2026-04-22T08:00:00.0000000+08:00'
   }
 ]
+
+const mockConfigDetails = mockConfigList.map((item) => {
+  return {
+    ...item,
+    fileNamePattern: item.id === 22 ? 'record-{yyyy}.{M}.{d}.csv' : `${item.eqName}_*.xlsx`,
+    headerRow: 1,
+    startRow: 2,
+    fieldMappings: JSON.stringify({
+      'PCB No.': 'pcbNo',
+      Barcode: 'qrCode',
+      'Lot No.': 'prodno',
+      Date: 'date',
+      Lot: 'lotno',
+      Cycle: 'cycle',
+      'Test Result': 'testResult',
+      'Con Param': 'continuityParam',
+      'ISO Param': 'insulationParam',
+      'Total Point': 'totalPoints',
+      'Table Struct': 'netlistStructure',
+      'Test Step': 'testStep',
+      'Bad Info': 'badPointInfo'
+    }),
+    extFields: null,
+    postProcessingType: 2,
+    postTableName: 'MasonETFailureInformation_BAK',
+    procedureName: 'MasonETFailureService',
+    serviceName: 'MasonETFailureService',
+    flag: '',
+    flagName: ''
+  }
+})
+
+function getIdFromUrl(url: string) {
+  const matched = url.match(/\/api\/file-configs\/([^/?]+)/)
+
+  return matched?.[1]
+}
+
+function wrap<T>(data: T) {
+  return {
+    code: 1,
+    info: '查询成功',
+    data
+  }
+}
 
 export function mockConfigs(config: AxiosRequestConfig) {
   const url = config.url || ''
@@ -42,7 +84,17 @@ export function mockConfigs(config: AxiosRequestConfig) {
   }
 
   if (method === 'get') {
-    return mockConfigList
+    const id = getIdFromUrl(url)
+
+    if (id) {
+      const detail =
+        mockConfigDetails.find((item) => String(item.id) === String(id)) ||
+        mockConfigDetails[0]
+
+      return wrap(detail)
+    }
+
+    return wrap(mockConfigList)
   }
 
   if (method === 'post') {
