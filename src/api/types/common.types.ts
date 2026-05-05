@@ -1,6 +1,6 @@
 export type ApiResponse<T = unknown> = {
-  code?: number
-  info?: string
+  code: number
+  info: string
   data: T
 }
 

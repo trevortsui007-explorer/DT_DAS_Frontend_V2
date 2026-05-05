@@ -1,19 +1,19 @@
 import axios, {
   type AxiosError,
   type AxiosInstance,
+  type AxiosRequestConfig
 } from 'axios'
 
 import { mockRequest } from '@/mock'
 
-// --- 关键修改：扩展 Axios 的类型定义 ---
 declare module 'axios' {
   interface AxiosInstance {
-    // 覆盖接口，让 request<T>() 直接返回 T
-    request<T = any, R = T>(config: AxiosRequestConfig): Promise<R>;
-    get<T = any, R = T>(url: string, config?: AxiosRequestConfig): Promise<R>;
-    post<T = any, R = T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<R>;
-    put<T = any, R = T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<R>;
-    delete<T = any, R = T>(url: string, config?: AxiosRequestConfig): Promise<R>;
+    request<T = unknown, R = T>(config: AxiosRequestConfig): Promise<R>
+    get<T = unknown, R = T>(url: string, config?: AxiosRequestConfig): Promise<R>
+    post<T = unknown, R = T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<R>
+    put<T = unknown, R = T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<R>
+    patch<T = unknown, R = T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<R>
+    delete<T = unknown, R = T>(url: string, config?: AxiosRequestConfig): Promise<R>
   }
 }
 
@@ -24,38 +24,51 @@ const request: AxiosInstance = axios.create({
   timeout: 15000
 })
 
+function unwrapResponse<T = unknown>(payload: unknown): T {
+  if (
+    payload &&
+    typeof payload === 'object' &&
+    'code' in payload &&
+    'data' in payload
+  ) {
+    return (payload as { data: T }).data
+  }
+
+  return payload as T
+}
+
 request.interceptors.request.use((config) => {
   if (USE_MOCK) {
     const mockResult = mockRequest(config)
+
     if (mockResult) {
-      // 通过 reject 传递 mock 数据
       return Promise.reject({
         __MOCK__: true,
         data: mockResult
       })
     }
   }
+
   return config
 })
 
 request.interceptors.response.use(
   (response) => {
-    // 正常响应只返回 data
-    return response.data
+    return unwrapResponse(response.data) as any
   },
   async (error: AxiosError & { __MOCK__?: boolean; data?: unknown }) => {
-    // 处理 Mock 逻辑
     if (error.__MOCK__) {
-      return error.data
+      return unwrapResponse(error.data)
     }
 
     const status = error.response?.status
-    const config = error.config
+    const config = error.config as AxiosRequestConfig | undefined
 
     if ((status === 404 || status === 405) && config) {
       const mockResult = mockRequest(config)
+
       if (mockResult) {
-        return mockResult
+        return unwrapResponse(mockResult)
       }
     }
 
