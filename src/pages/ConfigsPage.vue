@@ -6,12 +6,21 @@ import { confirm, message } from '@/shared/composables'
 
 import {
   ConfigDetailDrawer,
+  ConfigFormModal,
   ConfigsTable,
   ConfigsToolbar,
   useConfigsList
 } from '@/features/configs'
 
-import type { FileConfigItem } from '@/api'
+import {
+  createConfig,
+  updateConfig,
+  type CreateFileConfigPayload,
+  type FileConfigItem,
+  type UpdateFileConfigPayload
+} from '@/api'
+
+import type { ConfigFormMode } from '@/features/configs'
 
 const {
   loading,
@@ -25,6 +34,10 @@ const {
 } = useConfigsList()
 
 const detailOpen = ref(false)
+const formOpen = ref(false)
+const formLoading = ref(false)
+
+const formMode = ref<ConfigFormMode>('create')
 const currentConfig = ref<FileConfigItem | null>(null)
 
 onMounted(() => {
@@ -32,17 +45,20 @@ onMounted(() => {
 })
 
 function handleCreate() {
-  message.info('新增配置功能将在下一阶段迁移')
+  currentConfig.value = null
+  formMode.value = 'create'
+  formOpen.value = true
 }
 
 function handleView(row: FileConfigItem) {
-  message.info(`查看配置：${row.name}`)
   currentConfig.value = row
   detailOpen.value = true
 }
 
 function handleEdit(row: FileConfigItem) {
-  message.info(`编辑配置：${row.name}`)
+  currentConfig.value = row
+  formMode.value = 'edit'
+  formOpen.value = true
 }
 
 async function handleToggle(row: FileConfigItem) {
@@ -64,10 +80,50 @@ function handleReset() {
   resetFilters()
   message.info('筛选条件已重置')
 }
+
+async function handleSubmitConfig(
+  payload: CreateFileConfigPayload | UpdateFileConfigPayload
+) {
+  formLoading.value = true
+
+  try {
+    if (formMode.value === 'create') {
+      await createConfig(payload as CreateFileConfigPayload)
+      message.success('配置创建成功')
+    } else {
+      if (!currentConfig.value) {
+        message.error('未选择要编辑的配置')
+        return
+      }
+
+      await updateConfig(currentConfig.value.id, payload as UpdateFileConfigPayload)
+      message.success('配置保存成功')
+    }
+
+    formOpen.value = false
+    await loadConfigs()
+  } finally {
+    formLoading.value = false
+  }
+}
+
+function handleFormOpenChange(value: boolean) {
+  formOpen.value = value
+
+  if (!value) {
+    currentConfig.value = null
+  }
+}
 </script>
 
 <template>
   <div class="page">
+    <div class="page-toolbar">
+      <div>
+        <h2>配置管理</h2>
+        <p>当前页面基于标准后端字段直接渲染，不再使用 mapper。</p>
+      </div>
+    </div>
 
     <DTCard>
       <ConfigsToolbar
@@ -95,6 +151,15 @@ function handleReset() {
       v-model:open="detailOpen"
       :config="currentConfig"
       @edit="handleEdit"
+    />
+
+    <ConfigFormModal
+      :open="formOpen"
+      :mode="formMode"
+      :config="currentConfig"
+      :loading="formLoading"
+      @update:open="handleFormOpenChange"
+      @submit="handleSubmitConfig"
     />
   </div>
 </template>
