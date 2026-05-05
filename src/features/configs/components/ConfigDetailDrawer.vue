@@ -18,6 +18,7 @@ import type {
 import {
   fetchConfigById,
   type FileConfigDetail,
+  type FileConfigFieldMappingJson,
   type FileConfigItem
 } from '@/api'
 
@@ -34,8 +35,14 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
-  edit: [row: FileConfigDetail | FileConfigItem]
+  edit: [row: FileConfigItem]
 }>()
+
+type FieldMappingDetailRow = {
+  id: string
+  sourceField: string
+  targetField: string
+}
 
 const loading = ref(false)
 const detail = ref<FileConfigDetail | null>(null)
@@ -56,17 +63,26 @@ const statusType = computed(() => {
   return displayConfig.value.isEnabled ? 'success' : 'info'
 })
 
-const fieldMappingRows = computed(() => {
-  const mappings = detail.value?.fieldMappings
+const postProcessingText = computed(() => {
+  const type = Number(detail.value?.postProcessingType ?? 0)
 
-  if (!mappings) return []
+  if (type === 1) return '存储过程'
+  if (type === 2) return '服务处理'
 
-  return Object.entries(mappings).map(([sourceField, targetField]) => {
-    return {
-      sourceField,
-      targetField
-    }
-  })
+  return '不启用'
+})
+
+const postProcessingTagType = computed(() => {
+  const type = Number(detail.value?.postProcessingType ?? 0)
+
+  if (type === 1) return 'primary'
+  if (type === 2) return 'success'
+
+  return 'info'
+})
+
+const fieldMappingRows = computed<FieldMappingDetailRow[]>(() => {
+  return fieldMappingJsonToRows(detail.value?.fieldMappings)
 })
 
 const hasFieldMappings = computed(() => {
@@ -112,6 +128,22 @@ async function loadDetail(id: number | string) {
   }
 }
 
+function fieldMappingJsonToRows(
+  mapping?: FileConfigFieldMappingJson
+): FieldMappingDetailRow[] {
+  if (!mapping) {
+    return []
+  }
+
+  return Object.entries(mapping).map(([sourceField, targetField], index) => {
+    return {
+      id: `${sourceField}-${targetField}-${index}`,
+      sourceField,
+      targetField
+    }
+  })
+}
+
 function handleClose(value: boolean) {
   emit('update:open', value)
 }
@@ -127,14 +159,17 @@ function handleEdit() {
   <DTDrawer
     :open="open"
     title="配置详情"
-    width="720px"
+    width="760px"
     @update:open="handleClose"
   >
     <template #description>
-      查看当前采集配置的基础信息、字段映射和后处理配置。
+      查看当前采集配置的基础信息、高级配置、字段映射与后处理设置。
     </template>
 
-    <div v-if="displayConfig" class="config-detail">
+    <div
+      v-if="displayConfig"
+      class="config-detail"
+    >
       <div class="detail-loading-wrap">
         <DTLoading
           v-if="loading"
@@ -157,11 +192,6 @@ function handleEdit() {
             </div>
 
             <div class="detail-row">
-              <span class="detail-label">文件类型</span>
-              <strong class="detail-value">{{ displayConfig.fileType || '-' }}</strong>
-            </div>
-
-            <div class="detail-row">
               <span class="detail-label">目标表</span>
               <strong class="detail-value">{{ displayConfig.targetTable || '-' }}</strong>
             </div>
@@ -173,21 +203,26 @@ function handleEdit() {
           </div>
         </DTCard>
 
-        <DTCard title="文件读取配置">
+        <DTCard title="高级配置">
           <div class="detail-list">
             <div class="detail-row">
               <span class="detail-label">文件名规则</span>
-              <strong class="detail-value">{{ detail?.fileNamePattern || '-' }}</strong>
+              <strong class="detail-value">{{ displayConfig.fileNamePattern || '-' }}</strong>
+            </div>
+
+            <div class="detail-row">
+              <span class="detail-label">文件类型</span>
+              <strong class="detail-value">{{ displayConfig.fileType || '-' }}</strong>
             </div>
 
             <div class="detail-row">
               <span class="detail-label">表头行</span>
-              <strong class="detail-value">{{ detail?.headerRow ?? '-' }}</strong>
+              <strong class="detail-value">{{ displayConfig.headerRow ?? '-' }}</strong>
             </div>
 
             <div class="detail-row">
-              <span class="detail-label">数据起始行</span>
-              <strong class="detail-value">{{ detail?.startRow ?? '-' }}</strong>
+              <span class="detail-label">起始行</span>
+              <strong class="detail-value">{{ displayConfig.startRow ?? '-' }}</strong>
             </div>
           </div>
         </DTCard>
@@ -197,7 +232,7 @@ function handleEdit() {
             v-if="hasFieldMappings"
             :columns="fieldMappingColumns"
             :data="fieldMappingRows as DTTableRow[]"
-            row-key="sourceField"
+            row-key="id"
             empty-text="暂无字段映射"
           />
 
@@ -212,33 +247,50 @@ function handleEdit() {
         <DTCard title="后处理配置">
           <div class="detail-list">
             <div class="detail-row">
-              <span class="detail-label">后处理类型</span>
-              <strong class="detail-value">{{ detail?.postProcessingType ?? '-' }}</strong>
+              <span class="detail-label">后处理方式</span>
+              <DTTag :type="postProcessingTagType">
+                {{ postProcessingText }}
+              </DTTag>
             </div>
 
-            <div class="detail-row">
-              <span class="detail-label">后处理表名</span>
-              <strong class="detail-value">{{ detail?.postTableName || '-' }}</strong>
-            </div>
+            <template v-if="Number(detail?.postProcessingType ?? 0) !== 0">
+              <div class="detail-row">
+                <span class="detail-label">后处理目标表</span>
+                <strong class="detail-value">{{ detail?.postTableName || '-' }}</strong>
+              </div>
 
-            <div class="detail-row">
-              <span class="detail-label">存储过程</span>
-              <strong class="detail-value">{{ detail?.procedureName || '-' }}</strong>
-            </div>
+              <div
+                v-if="Number(detail?.postProcessingType ?? 0) === 1"
+                class="detail-row"
+              >
+                <span class="detail-label">存储过程名称</span>
+                <strong class="detail-value">{{ detail?.procedureName || '-' }}</strong>
+              </div>
 
-            <div class="detail-row">
-              <span class="detail-label">服务名称</span>
-              <strong class="detail-value">{{ detail?.serviceName || '-' }}</strong>
-            </div>
+              <div
+                v-if="Number(detail?.postProcessingType ?? 0) === 2"
+                class="detail-row"
+              >
+                <span class="detail-label">服务名称</span>
+                <strong class="detail-value">{{ detail?.serviceName || '-' }}</strong>
+              </div>
 
-            <div class="detail-row">
-              <span class="detail-label">标识字段</span>
-              <strong class="detail-value">{{ detail?.flag || '-' }}</strong>
-            </div>
+              <div class="detail-row">
+                <span class="detail-label">标识字段名</span>
+                <strong class="detail-value">{{ detail?.flagName || '-' }}</strong>
+              </div>
 
-            <div class="detail-row">
-              <span class="detail-label">标识名称</span>
-              <strong class="detail-value">{{ detail?.flagName || '-' }}</strong>
+              <div class="detail-row">
+                <span class="detail-label">标识字段值</span>
+                <strong class="detail-value">{{ detail?.flag || '-' }}</strong>
+              </div>
+            </template>
+
+            <div
+              v-else
+              class="detail-empty-line"
+            >
+              当前配置未启用后处理。
             </div>
           </div>
         </DTCard>
@@ -362,6 +414,18 @@ function handleEdit() {
   color: var(--dt-text-secondary);
   font-size: 14px;
   line-height: 1.7;
+}
+
+.detail-empty-line {
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--dt-border-subtle);
+  border-radius: var(--dt-radius-md);
+  color: var(--dt-text-muted);
+  background: var(--dt-bg-muted);
+  font-size: 13px;
 }
 
 .detail-actions {

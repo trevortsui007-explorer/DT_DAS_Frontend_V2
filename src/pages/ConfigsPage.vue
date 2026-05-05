@@ -14,8 +14,10 @@ import {
 
 import {
   createConfig,
+  fetchConfigById,
   updateConfig,
   type CreateFileConfigPayload,
+  type FileConfigDetail,
   type FileConfigItem,
   type UpdateFileConfigPayload
 } from '@/api'
@@ -36,9 +38,10 @@ const {
 const detailOpen = ref(false)
 const formOpen = ref(false)
 const formLoading = ref(false)
+const detailLoading = ref(false)
 
 const formMode = ref<ConfigFormMode>('create')
-const currentConfig = ref<FileConfigItem | null>(null)
+const currentConfig = ref<FileConfigItem | FileConfigDetail | null>(null)
 
 onMounted(() => {
   loadConfigs()
@@ -55,10 +58,18 @@ function handleView(row: FileConfigItem) {
   detailOpen.value = true
 }
 
-function handleEdit(row: FileConfigItem) {
-  currentConfig.value = row
+async function handleEdit(row: FileConfigItem) {
   formMode.value = 'edit'
-  formOpen.value = true
+  detailLoading.value = true
+
+  try {
+    const detail = await fetchConfigById(row.id)
+
+    currentConfig.value = detail
+    formOpen.value = true
+  } finally {
+    detailLoading.value = false
+  }
 }
 
 async function handleToggle(row: FileConfigItem) {
@@ -118,6 +129,12 @@ function handleFormOpenChange(value: boolean) {
 
 <template>
   <div class="page">
+    <div class="page-toolbar">
+      <div>
+        <h2>配置管理</h2>
+        <p>编辑配置前会先加载完整详情，确保高级字段、字段映射和后处理配置可以完整回填。</p>
+      </div>
+    </div>
 
     <DTCard>
       <ConfigsToolbar
@@ -134,7 +151,7 @@ function handleFormOpenChange(value: boolean) {
     <DTCard>
       <ConfigsTable
         :data="filteredConfigs"
-        :loading="loading"
+        :loading="loading || detailLoading"
         @view="handleView"
         @edit="handleEdit"
         @toggle="handleToggle"
