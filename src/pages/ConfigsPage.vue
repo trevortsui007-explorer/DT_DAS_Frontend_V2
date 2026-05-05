@@ -82,9 +82,12 @@ async function handleToggle(row: FileConfigItem) {
 
   if (!ok) return
 
-  await toggleConfigStatus(row)
-
-  message.success('状态更新成功')
+  try {
+    await toggleConfigStatus(row)
+    message.success(`${row.isEnabled ? '已启用' : '已禁用'}：${row.name}`)
+  } catch (error) {
+    message.error('状态更新失败')
+  }
 }
 
 function handleReset() {
@@ -129,12 +132,6 @@ function handleFormOpenChange(value: boolean) {
 
 <template>
   <div class="page">
-    <div class="page-toolbar">
-      <div>
-        <h2>配置管理</h2>
-        <p>编辑配置前会先加载完整详情，确保高级字段、字段映射和后处理配置可以完整回填。</p>
-      </div>
-    </div>
 
     <DTCard>
       <ConfigsToolbar

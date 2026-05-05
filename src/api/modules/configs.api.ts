@@ -103,7 +103,7 @@ function normalizeCreatePayload(data: CreateFileConfigPayload) {
     startRow: data.startRow,
     isEnabled: data.isEnabled,
     description: data.description,
-    fieldMappings: data.fieldMappings,
+    fieldMappings: JSON.stringify(data.fieldMappings || {}),
     extFields: data.extFields,
     postProcessingType: data.postProcessingType,
     postTableName: data.postTableName,
@@ -143,5 +143,10 @@ export function updateConfig(id: number | string, data: UpdateFileConfigPayload)
 }
 
 export function setConfigStatus(payload: SetConfigStatusPayload) {
-  return request.patch('/api/file-configs/status', payload)
+  return request.patch('/api/file-configs/status', null, {
+    params: {
+      ids: payload.ids.join(','),
+      isEnabled: payload.isEnabled
+    }
+  })
 }

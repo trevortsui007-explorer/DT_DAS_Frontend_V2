@@ -31,7 +31,17 @@ function unwrapResponse<T = unknown>(payload: unknown): T {
     'code' in payload &&
     'data' in payload
   ) {
-    return (payload as { data: T }).data
+    const response = payload as {
+      code: number
+      info?: string
+      data: T
+    }
+
+    if (response.code !== 1) {
+      throw new Error(response.info || '请求失败')
+    }
+
+    return response.data
   }
 
   return payload as T

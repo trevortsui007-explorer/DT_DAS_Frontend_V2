@@ -61,12 +61,15 @@ export function useConfigsList() {
   }
 
   async function toggleConfigStatus(row: FileConfigItem) {
+    const originalStatus = row.isEnabled;
+    const nextStatus = !originalStatus;
+
     await setConfigStatus({
       ids: [row.id],
-      isEnabled: !row.isEnabled
-    })
-
-    await loadConfigs()
+      isEnabled: nextStatus
+    });
+    
+    row.isEnabled = nextStatus;
   }
 
   function resetFilters() {
