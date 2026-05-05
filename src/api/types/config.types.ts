@@ -11,6 +11,13 @@ export type FileConfigItem = {
   fileNamePattern?: string
   headerRow?: number
   startRow?: number
+  fieldMappings?: FileConfigFieldMappingJson
+  postProcessingType?: number
+  postTableName?: string
+  procedureName?: string
+  serviceName?: string
+  flag?: string
+  flagName?: string
 }
 
 export type FileConfigFieldMapping = {

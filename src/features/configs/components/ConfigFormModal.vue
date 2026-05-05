@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, reactive, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 
 import {
+  DTButton,
   DTCard,
   DTForm,
   DTFormItem,
@@ -20,6 +21,14 @@ import type {
   DTSelectOption,
   DTSelectValue
 } from '@/shared/components'
+
+import {
+  createEmptyFieldMappingRow,
+  fieldMappingJsonToRows,
+  rowsToFieldMappingJson,
+  validateFieldMappingRows,
+  type FieldMappingRow
+} from '../utils/field-mapping.utils'
 
 export type ConfigFormMode = 'create' | 'edit'
 
@@ -51,11 +60,18 @@ type ConfigFormState = {
   isEnabled: DTSelectValue | ''
   description: string
 
-  // ++++ 3.7.1 高级基础字段
   fileNamePattern: string
   fileType: DTSelectValue | ''
   headerRow: string
   startRow: string
+
+  // ++++ 3.7.3 后处理配置
+  postProcessingType: DTSelectValue | ''
+  postTableName: string
+  procedureName: string
+  serviceName: string
+  flag: string
+  flagName: string
 }
 
 const form = reactive<ConfigFormState>({
@@ -65,19 +81,33 @@ const form = reactive<ConfigFormState>({
   isEnabled: true,
   description: '',
 
-  // ++++ 3.7.1 高级基础字段
   fileNamePattern: '',
   fileType: 'xlsx',
   headerRow: '',
-  startRow: ''
+  startRow: '',
+
+  // ++++ 3.7.3 后处理配置
+  postProcessingType: 0,
+  postTableName: '',
+  procedureName: '',
+  serviceName: '',
+  flag: '',
+  flagName: ''
 })
+
+const fieldMappingRows = ref<FieldMappingRow[]>([])
+const fieldMappingErrors = ref<string[]>([])
 
 const touched = reactive({
   name: false,
   sourcePath: false,
   targetTable: false,
   headerRow: false,
-  startRow: false
+  startRow: false,
+
+  // ++++ 3.7.3 后处理校验
+  procedureName: false,
+  serviceName: false
 })
 
 const enabledOptions: DTSelectOption[] = [
@@ -91,7 +121,6 @@ const enabledOptions: DTSelectOption[] = [
   }
 ]
 
-// ++++ 3.7.1 文件类型选项
 const fileTypeOptions: DTSelectOption[] = [
   {
     label: 'Excel 2007+（.xlsx）',
@@ -107,12 +136,44 @@ const fileTypeOptions: DTSelectOption[] = [
   }
 ]
 
+// ++++ 3.7.3 后处理类型
+const postProcessingTypeOptions: DTSelectOption[] = [
+  {
+    label: '不启用',
+    value: 0
+  },
+  {
+    label: '存储过程',
+    value: 1
+  },
+  {
+    label: '服务处理',
+    value: 2
+  }
+]
+
 const modalTitle = computed(() => {
   return props.mode === 'create' ? '新增配置' : '编辑配置'
 })
 
 const confirmText = computed(() => {
   return props.mode === 'create' ? '创建' : '保存'
+})
+
+const postProcessingTypeValue = computed(() => {
+  return Number(form.postProcessingType || 0)
+})
+
+const isProcedureMode = computed(() => {
+  return postProcessingTypeValue.value === 1
+})
+
+const isServiceMode = computed(() => {
+  return postProcessingTypeValue.value === 2
+})
+
+const isPostProcessingEnabled = computed(() => {
+  return postProcessingTypeValue.value !== 0
 })
 
 const nameError = computed(() => {
@@ -133,7 +194,6 @@ const targetTableError = computed(() => {
   return form.targetTable.trim() ? '' : '目标表不能为空'
 })
 
-// ++++ 3.7.1 行号校验：允许为空；不为空时必须是正整数
 const headerRowError = computed(() => {
   if (!touched.headerRow) return ''
   if (!form.headerRow.trim()) return ''
@@ -148,13 +208,31 @@ const startRowError = computed(() => {
   return isPositiveInteger(form.startRow) ? '' : '起始行必须是正整数'
 })
 
+// ++++ 3.7.3 存储过程模式下必填
+const procedureNameError = computed(() => {
+  if (!touched.procedureName) return ''
+  if (!isProcedureMode.value) return ''
+
+  return form.procedureName.trim() ? '' : '存储过程名称不能为空'
+})
+
+// ++++ 3.7.3 服务处理模式下必填
+const serviceNameError = computed(() => {
+  if (!touched.serviceName) return ''
+  if (!isServiceMode.value) return ''
+
+  return form.serviceName.trim() ? '' : '服务名称不能为空'
+})
+
 const hasError = computed(() => {
   return Boolean(
     !form.name.trim() ||
     !form.sourcePath.trim() ||
     !form.targetTable.trim() ||
     headerRowError.value ||
-    startRowError.value
+    startRowError.value ||
+    (isProcedureMode.value && !form.procedureName.trim()) ||
+    (isServiceMode.value && !form.serviceName.trim())
   )
 })
 
@@ -176,6 +254,15 @@ watch(
   }
 )
 
+// ++++ 3.7.3 切换后处理类型时，清理不相关校验状态
+watch(
+  () => form.postProcessingType,
+  () => {
+    touched.procedureName = false
+    touched.serviceName = false
+  }
+)
+
 function initForm() {
   form.name = props.config?.name || ''
   form.sourcePath = props.config?.sourcePath || ''
@@ -183,15 +270,28 @@ function initForm() {
   form.isEnabled = props.config?.isEnabled ?? true
   form.description = props.config?.description || ''
 
-  // ++++ 3.7.1 高级基础字段回填
   form.fileNamePattern = props.config?.fileNamePattern || ''
   form.fileType = props.config?.fileType || 'xlsx'
-  form.headerRow = props.config?.headerRow === undefined || props.config?.headerRow === null
-    ? ''
-    : String(props.config.headerRow)
-  form.startRow = props.config?.startRow === undefined || props.config?.startRow === null
-    ? ''
-    : String(props.config.startRow)
+  form.headerRow =
+    props.config?.headerRow === undefined || props.config?.headerRow === null
+      ? ''
+      : String(props.config.headerRow)
+
+  form.startRow =
+    props.config?.startRow === undefined || props.config?.startRow === null
+      ? ''
+      : String(props.config.startRow)
+
+  fieldMappingRows.value = fieldMappingJsonToRows(props.config?.fieldMappings)
+  fieldMappingErrors.value = []
+
+  // ++++ 3.7.3 后处理配置回填
+  form.postProcessingType = props.config?.postProcessingType ?? 0
+  form.postTableName = props.config?.postTableName || ''
+  form.procedureName = props.config?.procedureName || ''
+  form.serviceName = props.config?.serviceName || ''
+  form.flag = props.config?.flag || ''
+  form.flagName = props.config?.flagName || ''
 
   resetTouched()
 }
@@ -202,6 +302,8 @@ function resetTouched() {
   touched.targetTable = false
   touched.headerRow = false
   touched.startRow = false
+  touched.procedureName = false
+  touched.serviceName = false
 }
 
 function markAllTouched() {
@@ -210,6 +312,8 @@ function markAllTouched() {
   touched.targetTable = true
   touched.headerRow = true
   touched.startRow = true
+  touched.procedureName = true
+  touched.serviceName = true
 }
 
 function isPositiveInteger(value: string) {
@@ -234,6 +338,33 @@ function handleClose(value: boolean) {
   }
 }
 
+function handleAddFieldMapping() {
+  fieldMappingRows.value.push(createEmptyFieldMappingRow())
+  fieldMappingErrors.value = []
+}
+
+function handleRemoveFieldMapping(index: number) {
+  fieldMappingRows.value.splice(index, 1)
+
+  if (!fieldMappingRows.value.length) {
+    fieldMappingRows.value.push(createEmptyFieldMappingRow())
+  }
+
+  fieldMappingErrors.value = []
+}
+
+function handleFieldMappingInput() {
+  fieldMappingErrors.value = []
+}
+
+function validateFieldMappings() {
+  const errors = validateFieldMappingRows(fieldMappingRows.value)
+
+  fieldMappingErrors.value = errors
+
+  return errors.length === 0
+}
+
 function buildPayload(): CreateFileConfigPayload | UpdateFileConfigPayload {
   return {
     name: form.name.trim(),
@@ -242,11 +373,20 @@ function buildPayload(): CreateFileConfigPayload | UpdateFileConfigPayload {
     isEnabled: Boolean(form.isEnabled),
     description: form.description.trim(),
 
-    // ++++ 3.7.1 高级基础字段提交
     fileNamePattern: form.fileNamePattern.trim(),
     fileType: String(form.fileType || 'xlsx'),
     headerRow: toOptionalNumber(form.headerRow),
-    startRow: toOptionalNumber(form.startRow)
+    startRow: toOptionalNumber(form.startRow),
+
+    fieldMappings: rowsToFieldMappingJson(fieldMappingRows.value),
+
+    // ++++ 3.7.3 后处理配置提交
+    postProcessingType: postProcessingTypeValue.value,
+    postTableName: form.postTableName.trim(),
+    procedureName: form.procedureName.trim(),
+    serviceName: form.serviceName.trim(),
+    flag: form.flag.trim(),
+    flagName: form.flagName.trim()
   }
 }
 
@@ -254,6 +394,10 @@ function handleConfirm() {
   markAllTouched()
 
   if (hasError.value) {
+    return
+  }
+
+  if (!validateFieldMappings()) {
     return
   }
 
@@ -265,7 +409,7 @@ function handleConfirm() {
   <DTModal
     :open="open"
     :title="modalTitle"
-    width="760px"
+    width="900px"
     :confirm-text="confirmText"
     :loading="loading"
     @update:open="handleClose"
@@ -394,6 +538,168 @@ function handleConfirm() {
           </div>
         </DTForm>
       </DTCard>
+
+      <DTCard title="字段映射">
+        <div class="field-mapping">
+          <div class="field-mapping__header">
+            <div>
+              <p class="field-mapping__desc">
+                用于配置源文件字段与目标表字段之间的对应关系。
+              </p>
+
+              <div
+                v-if="fieldMappingErrors.length"
+                class="field-mapping__errors"
+              >
+                <p
+                  v-for="error in fieldMappingErrors"
+                  :key="error"
+                >
+                  {{ error }}
+                </p>
+              </div>
+            </div>
+
+            <DTButton
+              size="sm"
+              type="primary"
+              @click="handleAddFieldMapping"
+            >
+              新增字段
+            </DTButton>
+          </div>
+
+          <div class="field-mapping__list">
+            <div
+              v-for="(row, index) in fieldMappingRows"
+              :key="row.id"
+              class="field-mapping__row"
+            >
+              <div class="field-mapping__index">
+                #{{ index + 1 }}
+              </div>
+
+              <DTInput
+                v-model="row.sourceField"
+                placeholder="源字段，例如：批次号"
+                clearable
+                @input="handleFieldMappingInput"
+              />
+
+              <div class="field-mapping__arrow">
+                →
+              </div>
+
+              <DTInput
+                v-model="row.targetField"
+                placeholder="目标字段，例如：LotNo"
+                clearable
+                @input="handleFieldMappingInput"
+              />
+
+              <DTButton
+                size="sm"
+                type="danger"
+                @click="handleRemoveFieldMapping(index)"
+              >
+                删除
+              </DTButton>
+            </div>
+          </div>
+        </div>
+      </DTCard>
+
+      <DTCard title="后处理配置">
+        <DTForm label-position="top">
+          <DTFormItem
+            label="后处理方式"
+            help="不启用时，下面配置可以为空。"
+          >
+            <DTSelect
+              v-model="form.postProcessingType"
+              :options="postProcessingTypeOptions"
+              placeholder="请选择后处理方式"
+            />
+          </DTFormItem>
+
+          <div
+            v-if="isPostProcessingEnabled"
+            class="post-processing-panel"
+          >
+            <DTFormItem
+              label="后处理目标表"
+              help="可选。用于记录后处理结果或中间数据的目标表。"
+            >
+              <DTInput
+                v-model="form.postTableName"
+                placeholder="请输入后处理目标表"
+                clearable
+              />
+            </DTFormItem>
+
+            <DTFormItem
+              v-if="isProcedureMode"
+              label="存储过程名称"
+              required
+              :error="procedureNameError"
+            >
+              <DTInput
+                v-model="form.procedureName"
+                placeholder="例如：pr_DA_PostProcess"
+                clearable
+                :error="Boolean(procedureNameError)"
+                @blur="touched.procedureName = true"
+              />
+            </DTFormItem>
+
+            <DTFormItem
+              v-if="isServiceMode"
+              label="服务名称"
+              required
+              :error="serviceNameError"
+            >
+              <DTInput
+                v-model="form.serviceName"
+                placeholder="请输入服务名称"
+                clearable
+                :error="Boolean(serviceNameError)"
+                @blur="touched.serviceName = true"
+              />
+            </DTFormItem>
+
+            <div class="form-grid">
+              <DTFormItem
+                label="标识字段名"
+                help="例如：ProcessFlag。"
+              >
+                <DTInput
+                  v-model="form.flagName"
+                  placeholder="请输入标识字段名"
+                  clearable
+                />
+              </DTFormItem>
+
+              <DTFormItem
+                label="标识字段值"
+                help="例如：Y / 1 / DONE。"
+              >
+                <DTInput
+                  v-model="form.flag"
+                  placeholder="请输入标识字段值"
+                  clearable
+                />
+              </DTFormItem>
+            </div>
+          </div>
+
+          <div
+            v-else
+            class="post-processing-empty"
+          >
+            当前未启用后处理。
+          </div>
+        </DTForm>
+      </DTCard>
     </div>
   </DTModal>
 </template>
@@ -409,6 +715,94 @@ function handleConfirm() {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--dt-space-4);
+}
+
+.field-mapping {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dt-space-4);
+}
+
+.field-mapping__header {
+  display: flex;
+  gap: var(--dt-space-4);
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.field-mapping__desc {
+  margin: 0;
+  color: var(--dt-text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.field-mapping__errors {
+  margin-top: var(--dt-space-2);
+  color: var(--dt-color-danger);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.field-mapping__errors p {
+  margin: 0;
+}
+
+.field-mapping__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dt-space-3);
+}
+
+.field-mapping__row {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 24px minmax(0, 1fr) auto;
+  gap: var(--dt-space-3);
+  align-items: center;
+  padding: var(--dt-space-3);
+  border: 1px solid var(--dt-border-subtle);
+  border-radius: var(--dt-radius-lg);
+  background: var(--dt-bg-muted);
+}
+
+.field-mapping__index {
+  color: var(--dt-text-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.field-mapping__arrow {
+  color: var(--dt-text-muted);
+  text-align: center;
+}
+
+.post-processing-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dt-space-4);
+}
+
+.post-processing-empty {
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--dt-border-subtle);
+  border-radius: var(--dt-radius-lg);
+  color: var(--dt-text-muted);
+  background: var(--dt-bg-muted);
+  font-size: 14px;
+}
+
+@media (max-width: 860px) {
+  .field-mapping__row {
+    grid-template-columns: 1fr;
+  }
+
+  .field-mapping__index,
+  .field-mapping__arrow {
+    text-align: left;
+  }
 }
 
 @media (max-width: 720px) {
