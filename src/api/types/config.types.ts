@@ -8,6 +8,9 @@ export type FileConfigItem = {
   description?: string
   createTime?: string
   updateTime?: string
+  fileNamePattern?: string
+  headerRow?: number
+  startRow?: number
 }
 
 export type FileConfigFieldMapping = {
