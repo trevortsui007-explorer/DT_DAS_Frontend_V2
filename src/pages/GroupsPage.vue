@@ -15,6 +15,7 @@ import { DTCard } from '@/shared/components'
 import { confirm, message } from '@/shared/composables'
 
 import {
+  GroupDetailDrawer,
   GroupFormModal,
   GroupsTable,
   GroupsToolbar,
@@ -34,6 +35,7 @@ const {
   resetFilters
 } = useGroupsList()
 
+const detailOpen = ref(false)
 const formOpen = ref(false)
 const formLoading = ref(false)
 const formMode = ref<GroupFormMode>('create')
@@ -59,7 +61,8 @@ function handleCreate() {
 }
 
 function handleView(row: ConfigGroupItem) {
-  message.info(`查看分组：${row.groupName}`)
+  currentGroup.value = row
+  detailOpen.value = true
 }
 
 function handleEdit(row: ConfigGroupItem) {
@@ -164,7 +167,15 @@ async function handleSubmitGroup(payload: CreateGroupPayload | UpdateGroupPayloa
 function handleFormOpenChange(value: boolean) {
   formOpen.value = value
 
-  if (!value) {
+  if (!value && !detailOpen.value) {
+    currentGroup.value = null
+  }
+}
+
+function handleDetailOpenChange(value: boolean) {
+  detailOpen.value = value
+
+  if (!value && !formOpen.value) {
     currentGroup.value = null
   }
 }
@@ -204,6 +215,14 @@ function handleFormOpenChange(value: boolean) {
         @config-toggle="handleConfigToggle"
       />
     </DTCard>
+
+    <GroupDetailDrawer
+      :open="detailOpen"
+      :group="currentGroup"
+      @update:open="handleDetailOpenChange"
+      @edit="handleEdit"
+      @config-view="handleConfigView"
+    />
 
     <GroupFormModal
       :open="formOpen"

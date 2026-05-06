@@ -199,7 +199,7 @@ function handleConfigAction(type: 'view' | 'toggle', row: DTTableRow) {
         <strong>{{ data.length }}</strong>
       </div>
 
-      <div class="groups-table__summary-item groups-table__summary-item--soft">
+      <div class="groups-table__summary-item groups-table__summary-item--primary">
         <span>关联配置总数</span>
         <strong>{{ totalConfigCount }}</strong>
       </div>
@@ -354,12 +354,6 @@ function handleConfigAction(type: 'view' | 'toggle', row: DTTableRow) {
   border: 1px solid color-mix(in srgb, var(--dt-color-primary) 40%, transparent);
   color: var(--dt-color-primary);
   background: color-mix(in srgb, var(--dt-color-primary) 14%, var(--dt-bg-surface));
-}
-
-.groups-table__summary-item--soft {
-  border: 1px solid color-mix(in srgb, var(--dt-color-primary) 22%, transparent);
-  color: var(--dt-text-secondary);
-  background: color-mix(in srgb, var(--dt-color-primary) 7%, var(--dt-bg-surface));
 }
 
 .groups-table__summary-item--soft strong {
