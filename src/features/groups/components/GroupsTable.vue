@@ -1,10 +1,30 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { DTButton, DTTable, DTTag } from '@/shared/components'
-import type { DTTableColumn, DTTableRow } from '@/shared/components'
+import {
+  CheckCircleOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  EyeOutlined,
+  StopOutlined
+} from '@ant-design/icons-vue'
 
-import type { ConfigGroupItem } from '@/api'
+import {
+  DTButton,
+  DTEmpty,
+  DTTable,
+  DTTag
+} from '@/shared/components'
+
+import type {
+  DTTableColumn,
+  DTTableRow
+} from '@/shared/components'
+
+import type {
+  ConfigGroupAssociatedConfig,
+  ConfigGroupItem
+} from '@/api'
 
 const props = defineProps<{
   data: ConfigGroupItem[]
@@ -16,49 +36,100 @@ const emit = defineEmits<{
   edit: [row: ConfigGroupItem]
   toggle: [row: ConfigGroupItem]
   delete: [row: ConfigGroupItem]
+  selectionChange: [rows: ConfigGroupItem[]]
+
+  configView: [payload: { group: ConfigGroupItem; config: ConfigGroupAssociatedConfig }]
+  configToggle: [payload: { group: ConfigGroupItem; config: ConfigGroupAssociatedConfig }]
 }>()
+
+type AssociatedConfigRow = ConfigGroupAssociatedConfig & {
+  rowId: string
+  index: number
+  group: ConfigGroupItem
+}
 
 const columns: DTTableColumn[] = [
   {
+    key: 'selection',
+    type: 'selection',
+    width: 52,
+    align: 'center',
+    fixed: 'left'
+  },
+  {
+    key: 'expand',
+    type: 'expand',
+    width: 52,
+    align: 'center',
+    fixed: 'left'
+  },
+  {
     key: 'groupName',
     title: '分组名称',
-    minWidth: 180
+    minWidth: 180,
+    fixed: 'left',
+    showOverflowTooltip: true
   },
   {
     key: 'groupCategory',
     title: '分组类别',
-    minWidth: 140
+    minWidth: 140,
+    align: 'center'
   },
   {
     key: 'groupType',
     title: '分组类型',
-    minWidth: 160
+    minWidth: 180,
+    showOverflowTooltip: true
   },
   {
     key: 'configCount',
     title: '配置数',
     width: 100,
+    align: 'center',
+    sortable: true
+  },
+  {
+    key: 'isEnabled',
+    title: '状态',
+    width: 100,
     align: 'center'
   },
   {
-    key: 'associatedConfigs',
-    title: '关联配置',
-    minWidth: 260
+    key: 'actions',
+    title: '操作',
+    width: 190,
+    align: 'center',
+    fixed: 'right'
+  }
+]
+
+const associatedColumns: DTTableColumn[] = [
+  {
+    key: 'index',
+    title: '序号',
+    width: 100,
+    align: 'center'
   },
   {
-    key: 'isEnable',
-    title: '状态',
-    width: 100,
+    key: 'eqName',
+    title: '配置名称',
+    minWidth: 260,
+    align: 'center',
+    showOverflowTooltip: true
+  },
+  {
+    key: 'actions',
+    title: '操作',
+    width: 120,
     align: 'center'
   }
 ]
 
-const hasDuplicatedConfigs = computed(() => {
-  return props.data.some((group) => {
-    const names = group.associatedConfigs.map((config) => config.eqName)
-
-    return new Set(names).size !== names.length
-  })
+const totalConfigCount = computed(() => {
+  return props.data.reduce((sum, group) => {
+    return sum + (group.configCount || 0)
+  }, 0)
 })
 
 function getAssociatedConfigText(row: ConfigGroupItem) {
@@ -72,25 +143,66 @@ function getAssociatedConfigText(row: ConfigGroupItem) {
     .join('、')
 }
 
+function getAssociatedConfigRows(row: ConfigGroupItem): AssociatedConfigRow[] {
+  return row.associatedConfigs.map((config, index) => {
+    return {
+      ...config,
+      rowId: `${row.id}-${config.id}-${index}`,
+      index: index + 1,
+      group: row
+    }
+  })
+}
+
+function getConfigEnabled(config: ConfigGroupAssociatedConfig) {
+  return Number(config.isEnabled ?? 1) === 1
+}
+
+function handleSelectionChange(rows: DTTableRow[]) {
+  emit('selectionChange', rows as ConfigGroupItem[])
+}
+
 function handleAction(type: 'view' | 'edit' | 'toggle' | 'delete', row: DTTableRow) {
   const actions = {
     view: () => emit('view', row as ConfigGroupItem),
     edit: () => emit('edit', row as ConfigGroupItem),
     toggle: () => emit('toggle', row as ConfigGroupItem),
-    delete: () => emit('delete', row as ConfigGroupItem),
-  };
+    delete: () => emit('delete', row as ConfigGroupItem)
+  }
 
-  actions[type]();
+  actions[type]()
+}
+
+function handleConfigAction(type: 'view' | 'toggle', row: DTTableRow) {
+  const configRow = row as AssociatedConfigRow
+
+  const actions = {
+    view: () => emit('configView', {
+      group: configRow.group,
+      config: configRow
+    }),
+    toggle: () => emit('configToggle', {
+      group: configRow.group,
+      config: configRow
+    })
+  }
+
+  actions[type]()
 }
 </script>
 
 <template>
-  <div class="groups-table-wrap">
-    <div
-      v-if="hasDuplicatedConfigs"
-      class="groups-table-alert"
-    >
-      当前测试数据中存在重复绑定配置，建议后端或数据库连接表后续做去重约束。
+  <div class="groups-table">
+    <div class="groups-table__summary">
+      <div class="groups-table__summary-item groups-table__summary-item--primary">
+        <span>分组数量</span>
+        <strong>{{ data.length }}</strong>
+      </div>
+
+      <div class="groups-table__summary-item groups-table__summary-item--soft">
+        <span>关联配置总数</span>
+        <strong>{{ totalConfigCount }}</strong>
+      </div>
     </div>
 
     <DTTable
@@ -98,40 +210,113 @@ function handleAction(type: 'view' | 'edit' | 'toggle' | 'delete', row: DTTableR
       :data="data as DTTableRow[]"
       row-key="id"
       :loading="loading"
+      height="560px"
+      border
+      @selection-change="handleSelectionChange"
     >
+      <template #cell-groupCategory="{ value }">
+        <DTTag type="info">
+          {{ value || '未分类' }}
+        </DTTag>
+      </template>
+
+      <template #cell-configCount="{ value }">
+        <DTTag type="primary">
+          {{ value || 0 }}
+        </DTTag>
+      </template>
+
       <template #cell-associatedConfigs="{ row }">
-        <span class="associated-configs">
+        <span class="associated-preview">
           {{ getAssociatedConfigText(row as ConfigGroupItem) }}
         </span>
       </template>
 
-      <template #cell-isEnable="{ value }">
+      <template #cell-isEnabled="{ value }">
         <DTTag :type="Number(value) === 1 ? 'success' : 'info'">
           {{ Number(value) === 1 ? '启用' : '禁用' }}
         </DTTag>
       </template>
 
-      <template #actions="{ row }">
+      <template #cell-actions="{ row }">
         <div class="table-actions">
-          <DTButton size="sm" @click.stop="handleAction('view', row)">
-            查看
-          </DTButton>
-
-          <DTButton size="sm" type="primary" @click.stop="handleAction('edit', row)">
-            编辑
+          <DTButton
+            size="sm"
+            title="查看"
+            @click.stop="handleAction('view', row)"
+          >
+            <EyeOutlined />
           </DTButton>
 
           <DTButton
             size="sm"
-            :type="Number(row.isEnable) === 1 ? 'warning' : 'success'"
-            @click.stop="handleAction('toggle', row)"
+            type="primary"
+            title="编辑"
+            @click.stop="handleAction('edit', row)"
           >
-            {{ Number(row.isEnable) === 1 ? '禁用' : '启用' }}
+            <EditOutlined />
           </DTButton>
 
-          <DTButton size="sm" type="danger" @click.stop="handleAction('delete', row)">
-            删除
+          <DTButton
+            size="sm"
+            :type="Number((row as ConfigGroupItem).isEnabled) === 1 ? 'warning' : 'success'"
+            :title="Number((row as ConfigGroupItem).isEnabled) === 1 ? '禁用' : '启用'"
+            @click.stop="handleAction('toggle', row)"
+          >
+            <StopOutlined v-if="Number((row as ConfigGroupItem).isEnabled) === 1" />
+            <CheckCircleOutlined v-else />
           </DTButton>
+
+          <DTButton
+            size="sm"
+            type="danger"
+            title="删除"
+            @click.stop="handleAction('delete', row)"
+          >
+            <DeleteOutlined />
+          </DTButton>
+        </div>
+      </template>
+
+      <template #expand="{ row }">
+        <div class="group-expand">
+          <DTTable
+            v-if="(row as ConfigGroupItem).associatedConfigs.length"
+            :columns="associatedColumns"
+            :data="getAssociatedConfigRows(row as ConfigGroupItem) as DTTableRow[]"
+            row-key="rowId"
+            empty-text="暂无关联配置"
+            border
+          >
+            <template #cell-actions="{ row: configRow }">
+              <div class="table-actions table-actions--child">
+                <DTButton
+                  size="sm"
+                  title="查看配置"
+                  @click.stop="handleConfigAction('view', configRow)"
+                >
+                  <EyeOutlined />
+                </DTButton>
+
+                <DTButton
+                  size="sm"
+                  :type="getConfigEnabled(configRow as AssociatedConfigRow) ? 'warning' : 'success'"
+                  :title="getConfigEnabled(configRow as AssociatedConfigRow) ? '禁用配置' : '启用配置'"
+                  @click.stop="handleConfigAction('toggle', configRow)"
+                >
+                  <StopOutlined v-if="getConfigEnabled(configRow as AssociatedConfigRow)" />
+                  <CheckCircleOutlined v-else />
+                </DTButton>
+              </div>
+            </template>
+          </DTTable>
+
+          <DTEmpty
+            v-else
+            size="sm"
+            title="暂无关联配置"
+            description="当前分组还没有绑定任何配置。"
+          />
         </div>
       </template>
     </DTTable>
@@ -139,25 +324,51 @@ function handleAction(type: 'view' | 'edit' | 'toggle' | 'delete', row: DTTableR
 </template>
 
 <style scoped lang="scss">
-.groups-table-wrap {
+.groups-table {
   display: flex;
   flex-direction: column;
   gap: var(--dt-space-3);
 }
 
-.groups-table-alert {
-  padding: 10px 12px;
-  border: 1px solid color-mix(in srgb, var(--dt-color-warning) 42%, transparent);
-  border-radius: var(--dt-radius-md);
-  color: var(--dt-color-warning);
-  background: color-mix(in srgb, var(--dt-color-warning) 10%, transparent);
-  font-size: 13px;
-  line-height: 1.6;
+.groups-table__summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dt-space-3);
 }
 
-.associated-configs {
+.groups-table__summary-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dt-space-2);
+  padding: 8px 12px;
+  border-radius: var(--dt-radius-md);
+  font-size: 13px;
+}
+
+.groups-table__summary-item strong {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.groups-table__summary-item--primary {
+  border: 1px solid color-mix(in srgb, var(--dt-color-primary) 40%, transparent);
+  color: var(--dt-color-primary);
+  background: color-mix(in srgb, var(--dt-color-primary) 14%, var(--dt-bg-surface));
+}
+
+.groups-table__summary-item--soft {
+  border: 1px solid color-mix(in srgb, var(--dt-color-primary) 22%, transparent);
+  color: var(--dt-text-secondary);
+  background: color-mix(in srgb, var(--dt-color-primary) 7%, var(--dt-bg-surface));
+}
+
+.groups-table__summary-item--soft strong {
+  color: var(--dt-color-primary);
+}
+
+.associated-preview {
   display: inline-block;
-  max-width: 360px;
+  max-width: 100%;
   overflow: hidden;
   color: var(--dt-text-secondary);
   text-overflow: ellipsis;
@@ -167,7 +378,31 @@ function handleAction(type: 'view' | 'edit' | 'toggle' | 'delete', row: DTTableR
 
 .table-actions {
   display: inline-flex;
+  justify-content: center;
   gap: var(--dt-space-2);
-  justify-content: flex-end;
+  width: 100%;
+}
+
+.table-actions :deep(.dt-button) {
+  width: 32px;
+  padding: 0;
+}
+
+.table-actions :deep(.anticon) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.table-actions--child :deep(.dt-button) {
+  width: 30px;
+}
+
+.group-expand {
+  padding: var(--dt-space-3) var(--dt-space-4);
+  border-top: 1px solid var(--dt-border-subtle);
+  border-bottom: 1px solid var(--dt-border-subtle);
+  background: color-mix(in srgb, var(--dt-bg-muted) 68%, transparent);
 }
 </style>

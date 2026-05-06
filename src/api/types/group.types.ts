@@ -1,6 +1,7 @@
 export type ConfigGroupAssociatedConfig = {
   id: string
   eqName: string
+  isEnabled?: 0 | 1
 }
 
 export type ConfigGroupItem = {

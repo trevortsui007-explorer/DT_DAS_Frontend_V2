@@ -438,7 +438,7 @@ $primary-light: color-mix(in srgb, var(--dt-color-primary, #3b82f6) 10%, transpa
 }
 
 .dt-table__tr:hover .dt-table__td {
-  background: color-mix(in srgb, $bg-muted 60%, transparent);
+  background: color-mix(in srgb, $bg-muted 90%, transparent);
 }
 
 .dt-table__tr.is-active-row .dt-table__td {
@@ -447,7 +447,7 @@ $primary-light: color-mix(in srgb, var(--dt-color-primary, #3b82f6) 10%, transpa
 
 /* 斑马纹 */
 .dt-table--stripe .dt-table__tr:nth-child(even):not(.is-active-row) .dt-table__td {
-  background: color-mix(in srgb, $bg-muted 30%, transparent);
+  background: color-mix(in srgb, $bg-muted 45%, transparent);
 }
 
 /* 文本溢出隐藏 (Tooltip前置条件) */
