@@ -2,5 +2,6 @@ export { default } from './DTTable.vue'
 
 export type {
   DTTableColumn,
-  DTTableRow
+  DTTableRow,
+  PaginationConfig 
 } from './DTTable.vue'

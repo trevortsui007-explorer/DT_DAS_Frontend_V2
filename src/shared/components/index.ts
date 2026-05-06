@@ -30,7 +30,8 @@ export type {
 
 export type {
   DTTableColumn,
-  DTTableRow
+  DTTableRow,
+  PaginationConfig
 } from './DTTable'
 
 export type {
