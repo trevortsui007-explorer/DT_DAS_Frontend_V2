@@ -1,16 +1,27 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 
-import { deleteGroup, type ConfigGroupItem } from '@/api'
+import {
+  createGroup,
+  deleteGroup,
+  updateGroup,
+  type ConfigGroupAssociatedConfig,
+  type ConfigGroupItem,
+  type CreateGroupPayload,
+  type UpdateGroupPayload
+} from '@/api'
 
 import { DTCard } from '@/shared/components'
 import { confirm, message } from '@/shared/composables'
 
 import {
+  GroupFormModal,
   GroupsTable,
   GroupsToolbar,
   useGroupsList
 } from '@/features/groups'
+
+import type { GroupFormMode } from '@/features/groups'
 
 const {
   loading,
@@ -22,6 +33,11 @@ const {
   toggleGroupStatus,
   resetFilters
 } = useGroupsList()
+
+const formOpen = ref(false)
+const formLoading = ref(false)
+const formMode = ref<GroupFormMode>('create')
+const currentGroup = ref<ConfigGroupItem | null>(null)
 
 onMounted(() => {
   handleLoadGroups()
@@ -37,7 +53,9 @@ async function handleLoadGroups() {
 }
 
 function handleCreate() {
-  message.info('新增分组功能将在 4.2 接入')
+  currentGroup.value = null
+  formMode.value = 'create'
+  formOpen.value = true
 }
 
 function handleView(row: ConfigGroupItem) {
@@ -45,15 +63,19 @@ function handleView(row: ConfigGroupItem) {
 }
 
 function handleEdit(row: ConfigGroupItem) {
-  message.info(`编辑分组：${row.groupName}`)
+  currentGroup.value = row
+  formMode.value = 'edit'
+  formOpen.value = true
 }
 
 async function handleToggle(row: ConfigGroupItem) {
+  const enabled = row.isEnabled === 1
+
   const ok = await confirm({
-    title: row.isEnabled === 1 ? '确认禁用分组' : '确认启用分组',
+    title: enabled ? '确认禁用分组' : '确认启用分组',
     content: `分组：${row.groupName}`,
-    type: row.isEnabled === 1 ? 'warning' : 'success',
-    confirmText: row.isEnabled === 1 ? '禁用' : '启用'
+    type: enabled ? 'warning' : 'success',
+    confirmText: enabled ? '禁用' : '启用'
   })
 
   if (!ok) return
@@ -87,9 +109,64 @@ async function handleDelete(row: ConfigGroupItem) {
   }
 }
 
+function handleSelectionChange(rows: ConfigGroupItem[]) {
+  console.log('选中的分组：', rows)
+}
+
+function handleConfigView(payload: {
+  group: ConfigGroupItem
+  config: ConfigGroupAssociatedConfig
+}) {
+  message.info(`查看配置：${payload.config.eqName}`)
+}
+
+function handleConfigToggle(payload: {
+  group: ConfigGroupItem
+  config: ConfigGroupAssociatedConfig
+}) {
+  message.info(`切换配置状态：${payload.config.eqName}`)
+}
+
 function handleReset() {
   resetFilters()
   message.info('筛选条件已重置')
+}
+
+async function handleSubmitGroup(payload: CreateGroupPayload | UpdateGroupPayload) {
+  formLoading.value = true
+
+  try {
+    if (formMode.value === 'create') {
+      await createGroup(payload as CreateGroupPayload)
+      message.success('分组创建成功')
+    } else {
+      if (!currentGroup.value) {
+        message.error('未选择要编辑的分组')
+        return
+      }
+
+      await updateGroup(currentGroup.value.id, payload as UpdateGroupPayload)
+      message.success('分组保存成功')
+    }
+
+    formOpen.value = false
+    currentGroup.value = null
+
+    await handleLoadGroups()
+  } catch (error) {
+    console.error(error)
+    message.error(formMode.value === 'create' ? '分组创建失败' : '分组保存失败')
+  } finally {
+    formLoading.value = false
+  }
+}
+
+function handleFormOpenChange(value: boolean) {
+  formOpen.value = value
+
+  if (!value) {
+    currentGroup.value = null
+  }
 }
 </script>
 
@@ -122,7 +199,19 @@ function handleReset() {
         @edit="handleEdit"
         @toggle="handleToggle"
         @delete="handleDelete"
+        @selection-change="handleSelectionChange"
+        @config-view="handleConfigView"
+        @config-toggle="handleConfigToggle"
       />
     </DTCard>
+
+    <GroupFormModal
+      :open="formOpen"
+      :mode="formMode"
+      :group="currentGroup"
+      :loading="formLoading"
+      @update:open="handleFormOpenChange"
+      @submit="handleSubmitGroup"
+    />
   </div>
 </template>
