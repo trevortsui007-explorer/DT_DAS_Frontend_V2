@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import {
   createGroup,
   deleteGroup,
+  setGroupStatus,
   updateGroup,
   type ConfigGroupAssociatedConfig,
   type ConfigGroupItem,
@@ -12,7 +13,7 @@ import {
   type UpdateGroupPayload
 } from '@/api'
 
-import { DTCard } from '@/shared/components'
+import { DTButton, DTCard, DTTag } from '@/shared/components'
 import { confirm, message } from '@/shared/composables'
 
 import {
@@ -41,8 +42,19 @@ const detailOpen = ref(false)
 const formOpen = ref(false)
 const formLoading = ref(false)
 const bindOpen = ref(false)
+const batchLoading = ref(false)
+
 const formMode = ref<GroupFormMode>('create')
 const currentGroup = ref<ConfigGroupItem | null>(null)
+const selectedGroups = ref<ConfigGroupItem[]>([])
+
+const selectedCount = computed(() => {
+  return selectedGroups.value.length
+})
+
+const selectedNames = computed(() => {
+  return selectedGroups.value.map((group) => group.groupName).join('、')
+})
 
 onMounted(() => {
   handleLoadGroups()
@@ -78,6 +90,7 @@ async function handleBindSuccess() {
 async function handleLoadGroups() {
   try {
     await loadGroups()
+    selectedGroups.value = []
   } catch (error) {
     console.error(error)
     message.error('分组列表加载失败')
@@ -143,7 +156,7 @@ async function handleDelete(row: ConfigGroupItem) {
 }
 
 function handleSelectionChange(rows: ConfigGroupItem[]) {
-  console.log('选中的分组：', rows)
+  selectedGroups.value = rows
 }
 
 function handleConfigView(payload: {
@@ -170,6 +183,7 @@ function handleConfigToggle(payload: {
 
 function handleReset() {
   resetFilters()
+  selectedGroups.value = []
   message.info('筛选条件已重置')
 }
 
@@ -217,6 +231,83 @@ function handleDetailOpenChange(value: boolean) {
     currentGroup.value = null
   }
 }
+
+async function handleBatchSetStatus(isEnabled: 0 | 1) {
+  if (!selectedGroups.value.length) {
+    message.warning('请先选择分组')
+    return
+  }
+
+  const actionText = isEnabled === 1 ? '启用' : '禁用'
+
+  const ok = await confirm({
+    title: `确认批量${actionText}分组`,
+    content: `已选择 ${selectedGroups.value.length} 个分组：\n${selectedNames.value}`,
+    type: isEnabled === 1 ? 'success' : 'warning',
+    confirmText: actionText
+  })
+
+  if (!ok) return
+
+  batchLoading.value = true
+
+  try {
+    await setGroupStatus({
+      ids: selectedGroups.value.map((group) => group.id),
+      isEnabled
+    })
+
+    message.success(`批量${actionText}成功`)
+    await handleLoadGroups()
+  } catch (error) {
+    console.error(error)
+    message.error(`批量${actionText}失败`)
+  } finally {
+    batchLoading.value = false
+  }
+}
+
+function handleBatchEnable() {
+  return handleBatchSetStatus(1)
+}
+
+function handleBatchDisable() {
+  return handleBatchSetStatus(0)
+}
+
+async function handleBatchDelete() {
+  if (!selectedGroups.value.length) {
+    message.warning('请先选择分组')
+    return
+  }
+
+  const ok = await confirm({
+    title: '确认批量删除分组',
+    content: `已选择 ${selectedGroups.value.length} 个分组：\n${selectedNames.value}\n删除后不可恢复，是否继续？`,
+    type: 'danger',
+    confirmText: '删除'
+  })
+
+  if (!ok) return
+
+  batchLoading.value = true
+
+  try {
+    await Promise.all(
+      selectedGroups.value.map((group) => {
+        return deleteGroup(group.id)
+      })
+    )
+
+    message.success('批量删除成功')
+    await handleLoadGroups()
+  } catch (error) {
+    console.error(error)
+    message.error('批量删除失败')
+  } finally {
+    batchLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -240,10 +331,48 @@ function handleDetailOpenChange(value: boolean) {
       />
     </DTCard>
 
+    <DTCard v-if="selectedCount">
+      <div class="batch-bar">
+        <div class="batch-bar__info">
+          <span>已选择</span>
+          <DTTag type="primary">
+            {{ selectedCount }}
+          </DTTag>
+          <span>个分组</span>
+        </div>
+
+        <div class="batch-bar__actions">
+          <DTButton
+            type="success"
+            :loading="batchLoading"
+            @click="handleBatchEnable"
+          >
+            批量启用
+          </DTButton>
+
+          <DTButton
+            type="warning"
+            :loading="batchLoading"
+            @click="handleBatchDisable"
+          >
+            批量禁用
+          </DTButton>
+
+          <DTButton
+            type="danger"
+            :loading="batchLoading"
+            @click="handleBatchDelete"
+          >
+            批量删除
+          </DTButton>
+        </div>
+      </div>
+    </DTCard>
+
     <DTCard>
       <GroupsTable
         :data="filteredGroups"
-        :loading="loading"
+        :loading="loading || batchLoading"
         @view="handleView"
         @edit="handleEdit"
         @toggle="handleToggle"
@@ -281,3 +410,27 @@ function handleDetailOpenChange(value: boolean) {
     />
   </div>
 </template>
+
+<style scoped lang="scss">
+.batch-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dt-space-3);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.batch-bar__info {
+  display: inline-flex;
+  gap: var(--dt-space-2);
+  align-items: center;
+  color: var(--dt-text-secondary);
+  font-size: 14px;
+}
+
+.batch-bar__actions {
+  display: inline-flex;
+  gap: var(--dt-space-2);
+  align-items: center;
+}
+</style>

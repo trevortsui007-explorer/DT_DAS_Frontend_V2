@@ -8,6 +8,16 @@ import type {
   UpdateGroupPayload
 } from '@/api/types/group.types'
 
+function buildIdsQuery(ids: Array<number | string>) {
+  const params = new URLSearchParams()
+
+  ids.forEach((id) => {
+    params.append('ids', String(id))
+  })
+
+  return params.toString()
+}
+
 export function fetchGroups() {
   return request.get<ConfigGroupItem[]>('/api/file-configs/group')
 }
@@ -29,27 +39,27 @@ export function deleteGroup(id: number | string) {
 }
 
 export function setGroupStatus(payload: SetGroupStatusPayload) {
-  return request.patch('/api/file-configs/group/status', null, {
-    params: payload,
-  });
+  const idsQuery = buildIdsQuery(payload.ids)
+
+  return request.patch(
+    `/api/file-configs/group/status/?${idsQuery}&isEnabled=${payload.isEnabled}`
+  )
 }
 
 export function bindConfigsToGroup(
   groupId: number | string,
   ids: Array<number | string>
 ) {
-  return request.post(`/api/file-configs/group/${groupId}/configs`, {
-    ids
-  })
+  const idsQuery = buildIdsQuery(ids)
+
+  return request.post(`/api/file-configs/group/${groupId}/configs?${idsQuery}`)
 }
 
 export function removeConfigsFromGroup(
   groupId: number | string,
   ids: Array<number | string>
 ) {
-  return request.delete(`/api/file-configs/group/${groupId}/configs`, {
-    params: {
-      ids
-    }
-  })
+  const idsQuery = buildIdsQuery(ids)
+
+  return request.delete(`/api/file-configs/group/${groupId}/configs?${idsQuery}`)
 }

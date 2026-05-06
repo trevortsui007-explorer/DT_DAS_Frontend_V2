@@ -29,6 +29,6 @@ export type CreateGroupPayload = {
 export type UpdateGroupPayload = Partial<CreateGroupPayload>
 
 export type SetGroupStatusPayload = {
-  ids: string
+  ids: Array<number | string>
   isEnabled: 0 | 1
 }
