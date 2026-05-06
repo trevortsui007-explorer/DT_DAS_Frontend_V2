@@ -312,12 +312,6 @@ async function handleBatchDelete() {
 
 <template>
   <div class="page">
-    <div class="page-toolbar">
-      <div>
-        <h2>分组管理</h2>
-        <p>用于管理采集配置分组，后续支持绑定配置、批量执行和任务关联。</p>
-      </div>
-    </div>
 
     <DTCard>
       <GroupsToolbar
