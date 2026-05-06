@@ -71,7 +71,7 @@ export function useGroupsList() {
 
   async function toggleGroupStatus(row: ConfigGroupItem) {
     await setGroupStatus({
-      ids: [row.id],
+      ids: row.id,
       isEnabled: row.isEnabled === 1 ? 0 : 1
     })
 

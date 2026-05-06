@@ -29,7 +29,9 @@ export function deleteGroup(id: number | string) {
 }
 
 export function setGroupStatus(payload: SetGroupStatusPayload) {
-  return request.patch('/api/file-configs/group/status', payload)
+  return request.patch('/api/file-configs/group/status', null, {
+    params: payload,
+  });
 }
 
 export function bindConfigsToGroup(
