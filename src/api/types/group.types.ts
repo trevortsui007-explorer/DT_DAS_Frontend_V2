@@ -1,37 +1,33 @@
+export type ConfigGroupAssociatedConfig = {
+  id: string
+  eqName: string
+}
+
 export type ConfigGroupItem = {
-  id?: number
-  Id?: number
-
-  groupName?: string
-  name?: string
-
-  GroupName?: string
-  GroupCategory?: string
-  GroupType?: string
-  SortOrder?: number
-  IsEnabled?: boolean | number
-
-  description?: string
-  isEnabled?: boolean
-  createTime?: string
-  updateTime?: string
+  id: string
+  groupName: string
+  groupCategory: string
+  groupType: string
+  isEnabled: 0 | 1
+  configCount: number
+  associatedConfigs: ConfigGroupAssociatedConfig[]
 }
 
 export type ConfigGroupDetail = ConfigGroupItem & {
-  configs?: number[]
+  configIds?: Array<number | string>
 }
 
-export type CreateGroupPayload = Partial<ConfigGroupDetail>
+export type CreateGroupPayload = {
+  groupName: string
+  groupCategory: string
+  groupType: string
+  isEnabled?: 0 | 1
+  configIds?: Array<number | string>
+}
 
-export type UpdateGroupPayload = Partial<ConfigGroupDetail>
+export type UpdateGroupPayload = Partial<CreateGroupPayload>
 
 export type SetGroupStatusPayload = {
   ids: Array<number | string>
-  isEnabled: boolean
+  isEnabled: 0 | 1
 }
-
-export type GroupStatusQuery = {
-  ids: Array<number | string> | string
-}
-
-export type GroupStatusResult = Record<string, boolean>

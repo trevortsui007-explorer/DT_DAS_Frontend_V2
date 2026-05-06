@@ -36,11 +36,6 @@ const columns: DTTableColumn[] = [
     title: '状态',
     width: 100,
     align: 'center'
-  },
-  {
-    key: 'updateTime',
-    title: '更新时间',
-    minWidth: 180
   }
 ]
 

@@ -4,16 +4,9 @@ import type {
   ConfigGroupDetail,
   ConfigGroupItem,
   CreateGroupPayload,
-  GroupStatusQuery,
-  GroupStatusResult,
   SetGroupStatusPayload,
   UpdateGroupPayload
 } from '@/api/types/group.types'
-
-function normalizeIds(value?: Array<number | string> | string) {
-  if (!value) return undefined
-  return Array.isArray(value) ? value.join(',') : value
-}
 
 export function fetchGroups() {
   return request.get<ConfigGroupItem[]>('/api/file-configs/group')
@@ -36,46 +29,25 @@ export function deleteGroup(id: number | string) {
 }
 
 export function setGroupStatus(payload: SetGroupStatusPayload) {
-  const formData = new FormData()
+  return request.patch('/api/file-configs/group/status', payload)
+}
 
-  formData.append('ids', payload.ids.join(','))
-  formData.append('isEnabled', String(payload.isEnabled))
-
-  return request.patch('/api/file-configs/group/status/', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    }
+export function bindConfigsToGroup(
+  groupId: number | string,
+  ids: Array<number | string>
+) {
+  return request.post(`/api/file-configs/group/${groupId}/configs`, {
+    ids
   })
 }
 
-export function fetchGroupStatus(query: GroupStatusQuery) {
-  return request.get<GroupStatusResult>('/api/file-configs/group/status/', {
-    params: {
-      ids: normalizeIds(query.ids)
-    }
-  })
-}
-
-export function bindConfigsToGroup(groupId: number | string, ids: Array<number | string>) {
-  const params = new URLSearchParams()
-
-  ids.forEach((id) => {
-    params.append('ids', String(id))
-  })
-
-  return request.post(`/api/file-configs/group/${groupId}/configs`, null, {
-    params
-  })
-}
-
-export function removeConfigsFromGroup(groupId: number | string, ids: Array<number | string>) {
-  const params = new URLSearchParams()
-
-  ids.forEach((id) => {
-    params.append('ids', String(id))
-  })
-
+export function removeConfigsFromGroup(
+  groupId: number | string,
+  ids: Array<number | string>
+) {
   return request.delete(`/api/file-configs/group/${groupId}/configs`, {
-    params
+    params: {
+      ids
+    }
   })
 }

@@ -1,5 +1,6 @@
 export * from './dashboard'
 export * from './configs'
+export * from './groups'
 export * from './tasks'
 export * from './logs'
 export * from './execution'
