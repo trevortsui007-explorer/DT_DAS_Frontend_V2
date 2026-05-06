@@ -8,6 +8,7 @@ import {
   type ConfigGroupAssociatedConfig,
   type ConfigGroupItem,
   type CreateGroupPayload,
+  type FileConfigItem,
   type UpdateGroupPayload
 } from '@/api'
 
@@ -15,6 +16,7 @@ import { DTCard } from '@/shared/components'
 import { confirm, message } from '@/shared/composables'
 
 import {
+  GroupBindConfigsDrawer,
   GroupDetailDrawer,
   GroupFormModal,
   GroupsTable,
@@ -38,12 +40,40 @@ const {
 const detailOpen = ref(false)
 const formOpen = ref(false)
 const formLoading = ref(false)
+const bindOpen = ref(false)
 const formMode = ref<GroupFormMode>('create')
 const currentGroup = ref<ConfigGroupItem | null>(null)
 
 onMounted(() => {
   handleLoadGroups()
 })
+
+function handleBind(row: ConfigGroupItem) {
+  currentGroup.value = row
+  bindOpen.value = true
+}
+
+function handleBindOpenChange(value: boolean) {
+  bindOpen.value = value
+
+  if (!value && !detailOpen.value && !formOpen.value) {
+    currentGroup.value = null
+  }
+}
+
+async function handleBindSuccess() {
+  await handleLoadGroups()
+
+  if (currentGroup.value) {
+    const latest = filteredGroups.value.find((group) => {
+      return group.id === currentGroup.value?.id
+    })
+
+    if (latest) {
+      currentGroup.value = latest
+    }
+  }
+}
 
 async function handleLoadGroups() {
   try {
@@ -123,6 +153,14 @@ function handleConfigView(payload: {
   message.info(`查看配置：${payload.config.eqName}`)
 }
 
+function handleBindConfigView(config: FileConfigItem | ConfigGroupAssociatedConfig) {
+  const name = 'eqName' in config
+    ? config.eqName
+    : config.name
+
+  message.info(`查看配置：${name}`)
+}
+
 function handleConfigToggle(payload: {
   group: ConfigGroupItem
   config: ConfigGroupAssociatedConfig
@@ -167,7 +205,7 @@ async function handleSubmitGroup(payload: CreateGroupPayload | UpdateGroupPayloa
 function handleFormOpenChange(value: boolean) {
   formOpen.value = value
 
-  if (!value && !detailOpen.value) {
+  if (!value && !detailOpen.value && !bindOpen.value) {
     currentGroup.value = null
   }
 }
@@ -175,7 +213,7 @@ function handleFormOpenChange(value: boolean) {
 function handleDetailOpenChange(value: boolean) {
   detailOpen.value = value
 
-  if (!value && !formOpen.value) {
+  if (!value && !formOpen.value && !bindOpen.value) {
     currentGroup.value = null
   }
 }
@@ -213,6 +251,7 @@ function handleDetailOpenChange(value: boolean) {
         @selection-change="handleSelectionChange"
         @config-view="handleConfigView"
         @config-toggle="handleConfigToggle"
+        @bind="handleBind"
       />
     </DTCard>
 
@@ -231,6 +270,14 @@ function handleDetailOpenChange(value: boolean) {
       :loading="formLoading"
       @update:open="handleFormOpenChange"
       @submit="handleSubmitGroup"
+    />
+
+    <GroupBindConfigsDrawer
+      :open="bindOpen"
+      :group="currentGroup"
+      @update:open="handleBindOpenChange"
+      @success="handleBindSuccess"
+      @config-view="handleBindConfigView"
     />
   </div>
 </template>

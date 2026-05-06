@@ -6,6 +6,7 @@ import {
   DeleteOutlined,
   EditOutlined,
   EyeOutlined,
+  LinkOutlined,
   StopOutlined
 } from '@ant-design/icons-vue'
 
@@ -37,6 +38,7 @@ const emit = defineEmits<{
   toggle: [row: ConfigGroupItem]
   delete: [row: ConfigGroupItem]
   selectionChange: [rows: ConfigGroupItem[]]
+  bind: [row: ConfigGroupItem]
 
   configView: [payload: { group: ConfigGroupItem; config: ConfigGroupAssociatedConfig }]
   configToggle: [payload: { group: ConfigGroupItem; config: ConfigGroupAssociatedConfig }]
@@ -162,12 +164,13 @@ function handleSelectionChange(rows: DTTableRow[]) {
   emit('selectionChange', rows as ConfigGroupItem[])
 }
 
-function handleAction(type: 'view' | 'edit' | 'toggle' | 'delete', row: DTTableRow) {
+function handleAction(type: 'view' | 'edit' | 'toggle' | 'delete' | 'bind', row: DTTableRow) {
   const actions = {
     view: () => emit('view', row as ConfigGroupItem),
     edit: () => emit('edit', row as ConfigGroupItem),
     toggle: () => emit('toggle', row as ConfigGroupItem),
-    delete: () => emit('delete', row as ConfigGroupItem)
+    delete: () => emit('delete', row as ConfigGroupItem),
+    bind: () => emit('bind', row as ConfigGroupItem)
   }
 
   actions[type]()
@@ -246,6 +249,15 @@ function handleConfigAction(type: 'view' | 'toggle', row: DTTableRow) {
             @click.stop="handleAction('view', row)"
           >
             <EyeOutlined />
+          </DTButton>
+
+          <DTButton
+            size="sm"
+            type="success"
+            title="绑定配置"
+            @click.stop="handleAction('bind', row)"
+          >
+            <LinkOutlined />
           </DTButton>
 
           <DTButton
