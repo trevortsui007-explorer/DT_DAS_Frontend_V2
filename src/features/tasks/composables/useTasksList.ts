@@ -57,21 +57,27 @@ export function useTasksList() {
       const cronExpression = item.cronExpression.toLowerCase()
       const description = String(item.description || '').toLowerCase()
 
+      const groupNames = item.associatedGroups
+        .map((group) => group.groupName)
+        .join(',')
+        .toLowerCase()
+
       const keywordMatched =
         !keywordValue ||
         taskName.includes(keywordValue) ||
         modeText.includes(keywordValue) ||
         cronExpression.includes(keywordValue) ||
-        description.includes(keywordValue)
+        description.includes(keywordValue) ||
+        groupNames.includes(keywordValue)
 
       const statusMatched =
-        status.value === '' ||
+        !status.value ||
         status.value === 'all' ||
         (status.value === 'enabled' && Number(item.isEnabled) === 1) ||
         (status.value === 'disabled' && Number(item.isEnabled) === 0)
 
       const modeMatched =
-        taskMode.value === '' ||
+        !taskMode.value ||
         taskMode.value === 'all' ||
         Number(taskMode.value) === Number(item.taskMode)
 

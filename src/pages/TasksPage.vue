@@ -17,11 +17,10 @@ import {
   deleteTasks,
   updateTask,
   type CreateTaskPayload,
+  type TaskAssociatedGroup,
   type TaskItem,
   type UpdateTaskPayload
 } from '@/api'
-
-import type { TaskFormMode } from '@/features/tasks'
 
 const {
   loading,
@@ -40,7 +39,7 @@ const detailOpen = ref(false)
 const formOpen = ref(false)
 const formLoading = ref(false)
 
-const formMode = ref<TaskFormMode>('create')
+const formMode = ref<'create' | 'edit'>('create')
 const currentTask = ref<TaskItem | null>(null)
 const selectedTasks = ref<TaskItem[]>([])
 
@@ -100,6 +99,14 @@ async function handleDelete(row: TaskItem) {
 
 function handleExecute(row: TaskItem) {
   message.info(`执行任务功能后续接入：${row.taskName}`)
+}
+
+function handleBindGroups(row: TaskItem) {
+  message.info(`绑定分组功能下一步接入：${row.taskName}`)
+}
+
+function handleGroupView(payload: { task: TaskItem; group: TaskAssociatedGroup }) {
+  message.info(`查看任务「${payload.task.taskName}」关联分组：${payload.group.groupName}`)
 }
 
 function handleReset() {
@@ -189,7 +196,9 @@ function handleDetailOpenChange(value: boolean) {
         @toggle="handleToggle"
         @delete="handleDelete"
         @execute="handleExecute"
+        @bind-groups="handleBindGroups"
         @selection-change="handleSelectionChange"
+        @group-view="handleGroupView"
       />
     </DTCard>
 
