@@ -5,6 +5,7 @@ import { DTCard } from '@/shared/components'
 import { confirm, message } from '@/shared/composables'
 
 import {
+  TaskBindGroupsDrawer,
   TaskDetailDrawer,
   TaskFormModal,
   TasksTable,
@@ -38,6 +39,9 @@ const {
 const detailOpen = ref(false)
 const formOpen = ref(false)
 const formLoading = ref(false)
+
+const bindGroupsOpen = ref(false)
+const bindGroupsLoading = ref(false)
 
 const formMode = ref<'create' | 'edit'>('create')
 const currentTask = ref<TaskItem | null>(null)
@@ -102,7 +106,8 @@ function handleExecute(row: TaskItem) {
 }
 
 function handleBindGroups(row: TaskItem) {
-  message.info(`绑定分组功能下一步接入：${row.taskName}`)
+  currentTask.value = row
+  bindGroupsOpen.value = true
 }
 
 function handleGroupView(payload: { task: TaskItem; group: TaskAssociatedGroup }) {
@@ -139,6 +144,7 @@ async function handleSubmitTask(
 
     formOpen.value = false
     detailOpen.value = false
+    bindGroupsOpen.value = false
     currentTask.value = null
 
     await loadTasks()
@@ -147,10 +153,21 @@ async function handleSubmitTask(
   }
 }
 
+async function handleBindGroupsSuccess() {
+  message.success('任务配置组绑定成功')
+
+  bindGroupsOpen.value = false
+  detailOpen.value = false
+  formOpen.value = false
+  currentTask.value = null
+
+  await loadTasks()
+}
+
 function handleFormOpenChange(value: boolean) {
   formOpen.value = value
 
-  if (!value && !detailOpen.value) {
+  if (!value && !detailOpen.value && !bindGroupsOpen.value) {
     currentTask.value = null
   }
 }
@@ -158,7 +175,15 @@ function handleFormOpenChange(value: boolean) {
 function handleDetailOpenChange(value: boolean) {
   detailOpen.value = value
 
-  if (!value && !formOpen.value) {
+  if (!value && !formOpen.value && !bindGroupsOpen.value) {
+    currentTask.value = null
+  }
+}
+
+function handleBindGroupsOpenChange(value: boolean) {
+  bindGroupsOpen.value = value
+
+  if (!value && !detailOpen.value && !formOpen.value) {
     currentTask.value = null
   }
 }
@@ -169,7 +194,7 @@ function handleDetailOpenChange(value: boolean) {
     <div class="page-toolbar">
       <div>
         <h2>任务管理</h2>
-        <p>管理数据采集任务、执行周期、启用状态和后续执行入口。</p>
+        <p>管理数据采集任务、执行周期、启用状态、关联分组和后续执行入口。</p>
       </div>
     </div>
 
@@ -216,6 +241,14 @@ function handleDetailOpenChange(value: boolean) {
       :loading="formLoading"
       @update:open="handleFormOpenChange"
       @submit="handleSubmitTask"
+    />
+
+    <TaskBindGroupsDrawer
+      :open="bindGroupsOpen"
+      :task="currentTask"
+      :loading="bindGroupsLoading"
+      @update:open="handleBindGroupsOpenChange"
+      @success="handleBindGroupsSuccess"
     />
   </div>
 </template>
