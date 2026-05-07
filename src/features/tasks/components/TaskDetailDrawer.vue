@@ -15,10 +15,8 @@ import {
   type TaskItem
 } from '@/api'
 
-import {
-  getTaskModeTagType,
-  getTaskModeText
-} from '../utils/task-mode'
+import { getTaskModeTagType, getTaskModeText} from '../utils/task-mode'
+import { formatCronText, formatDateTime } from '../utils/task-cron-format'
 
 const props = withDefaults(
   defineProps<{
@@ -131,8 +129,15 @@ function handleEdit() {
             </div>
 
             <div class="detail-row detail-row--column">
-              <span class="detail-label">Cron 表达式</span>
-              <code class="detail-code">{{ displayTask.cronExpression || '-' }}</code>
+            <span class="detail-label">Cron 表达式</span>
+
+            <code class="detail-code">
+                {{ displayTask.cronExpression || '-' }}
+            </code>
+
+            <p class="detail-cron-text">
+                {{ formatCronText(displayTask.cronExpression) }}
+            </p>
             </div>
           </div>
         </DTCard>
@@ -168,13 +173,17 @@ function handleEdit() {
         <DTCard title="时间信息">
           <div class="detail-list">
             <div class="detail-row">
-              <span class="detail-label">创建时间</span>
-              <strong class="detail-value">{{ displayTask.createTime || '-' }}</strong>
+            <span class="detail-label">创建时间</span>
+            <strong class="detail-value">
+                {{ formatDateTime(displayTask.createTime) }}
+            </strong>
             </div>
 
             <div class="detail-row">
-              <span class="detail-label">更新时间</span>
-              <strong class="detail-value">{{ displayTask.updateTime || '-' }}</strong>
+            <span class="detail-label">更新时间</span>
+            <strong class="detail-value">
+                {{ formatDateTime(displayTask.updateTime) }}
+            </strong>
             </div>
           </div>
         </DTCard>
@@ -288,5 +297,12 @@ function handleEdit() {
   display: flex;
   justify-content: flex-end;
   gap: var(--dt-space-3);
+}
+
+.detail-cron-text {
+  margin: 0;
+  color: var(--dt-text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
 }
 </style>

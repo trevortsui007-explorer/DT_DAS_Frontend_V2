@@ -22,6 +22,7 @@ import type {
 import type { TaskItem } from '@/api'
 
 import { getTaskModeTagType, getTaskModeText } from '../utils/task-mode'
+import { formatCronText, formatDateTime } from '../utils/task-cron-format'
 
 defineProps<{
   data: TaskItem[]
@@ -63,6 +64,7 @@ const columns: DTTableColumn[] = [
     key: 'cronExpression',
     title: 'Cron 表达式',
     minWidth: 180,
+    align: 'center',
     showOverflowTooltip: true
   },
   {
@@ -121,20 +123,27 @@ function handleSelectionChange(rows: DTTableRow[]) {
     border
     @selection-change="handleSelectionChange"
   >
-    <template #cell-taskType="{ value }">
-      <DTTag type="primary">
-        {{ value || '-' }}
+    <template #cell-taskMode="{ value }">
+      <DTTag :type="getTaskModeTagType(value)">
+        {{ getTaskModeText(value) }}
       </DTTag>
+    </template>
+
+    <template #cell-cronExpression="{ value }">
+      <div class="cron-cell">
+        <span class="cron-cell__raw">{{ value || '-' }}</span>
+        <span class="cron-cell__text">{{ formatCronText(String(value || '')) }}</span>
+      </div>
+    </template>
+
+    <template #cell-updateTime="{ value }">
+      {{ formatDateTime(String(value || '')) }}
     </template>
 
     <template #cell-isEnabled="{ row }">
       <DTTag :type="getEnabled(row as TaskItem) ? 'success' : 'info'">
         {{ getEnabled(row as TaskItem) ? '启用' : '禁用' }}
       </DTTag>
-    </template>
-
-    <template #cell-updateTime="{ value }">
-      {{ value || '-' }}
     </template>
 
     <template #cell-actions="{ row }">
@@ -206,5 +215,28 @@ function handleSelectionChange(rows: DTTableRow[]) {
   align-items: center;
   justify-content: center;
   font-size: 14px;
+}
+
+.cron-cell {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cron-cell__text {
+  color: var(--dt-text-primary);
+  font-family:
+    Consolas,
+    Monaco,
+    'Courier New',
+    monospace;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cron-cell__raw {
+  color: var(--dt-text-muted);
+  font-size: 12px;
 }
 </style>

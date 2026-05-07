@@ -39,7 +39,7 @@ export function useTasksList() {
       value: 'all'
     },
     {
-      label: '手动任务',
+      label: '普通任务',
       value: 0
     },
     {
@@ -65,13 +65,13 @@ export function useTasksList() {
         description.includes(keywordValue)
 
       const statusMatched =
-        !status.value ||
+        status.value === '' ||
         status.value === 'all' ||
         (status.value === 'enabled' && Number(item.isEnabled) === 1) ||
         (status.value === 'disabled' && Number(item.isEnabled) === 0)
 
       const modeMatched =
-        !taskMode.value ||
+        taskMode.value === '' ||
         taskMode.value === 'all' ||
         Number(taskMode.value) === Number(item.taskMode)
 
