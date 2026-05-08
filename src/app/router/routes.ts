@@ -4,6 +4,7 @@ import AppLayout from '@/layouts/AppLayout.vue'
 
 import OverviewPage from '@/pages/OverviewPage.vue'
 import ConfigsPage from '@/pages/ConfigsPage.vue'
+import GroupsPage from '@/pages/GroupsPage.vue'
 import TasksPage from '@/pages/TasksPage.vue'
 import TaskLogsPage from '@/pages/TaskLogsPage.vue'
 import NotFoundPage from '@/pages/NotFoundPage.vue'
@@ -30,6 +31,15 @@ export const routes: RouteRecordRaw[] = [
         component: ConfigsPage,
         meta: {
           title: '配置管理',
+          theme: 'default'
+        }
+      },
+      {
+        path: 'groups',
+        name: 'Groups',
+        component: GroupsPage,
+        meta: {
+          title: '分组管理',
           theme: 'default'
         }
       },

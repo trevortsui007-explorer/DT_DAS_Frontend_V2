@@ -5,15 +5,12 @@ import type { DTSelectOption, DTSelectValue } from '@/shared/components'
 defineProps<{
   keyword: string
   status: DTSelectValue | ''
-  taskMode: DTSelectValue | ''
   statusOptions: DTSelectOption[]
-  taskModeOptions: DTSelectOption[]
 }>()
 
 const emit = defineEmits<{
   'update:keyword': [value: string]
   'update:status': [value: DTSelectValue | '']
-  'update:taskMode': [value: DTSelectValue | '']
   search: []
   reset: []
   create: []
@@ -22,21 +19,13 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="tasks-toolbar">
-    <div class="tasks-toolbar__filters">
+  <div class="groups-toolbar">
+    <div class="groups-toolbar__filters">
       <DTInput
         :model-value="keyword"
-        placeholder="请输入任务名称 / Cron / 描述"
+        placeholder="请输入分组名称 / 类别 / 类型 / 配置名称"
         clearable
         @update:model-value="emit('update:keyword', String($event))"
-      />
-
-      <DTSelect
-        :model-value="taskMode"
-        :options="taskModeOptions"
-        placeholder="请选择任务类型"
-        clearable
-        @update:model-value="emit('update:taskMode', $event)"
       />
 
       <DTSelect
@@ -61,13 +50,13 @@ const emit = defineEmits<{
     </div>
 
     <DTButton type="primary" @click="emit('create')">
-      新增任务
+      新增分组
     </DTButton>
   </div>
 </template>
 
 <style scoped lang="scss">
-.tasks-toolbar {
+.groups-toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: var(--dt-space-4);
@@ -75,34 +64,22 @@ const emit = defineEmits<{
   justify-content: space-between;
 }
 
-.tasks-toolbar__filters {
+.groups-toolbar__filters {
   display: grid;
-  grid-template-columns:
-    minmax(0, 280px)
-    minmax(0, 160px)
-    minmax(0, 160px)
-    auto
-    auto
-    auto;
+  grid-template-columns: minmax(0, 300px) minmax(0, 180px) auto auto auto;
   gap: var(--dt-space-3);
   align-items: center;
 }
 
-@media (max-width: 1280px) {
-  .tasks-toolbar__filters {
-    grid-template-columns:
-      minmax(0, 1fr)
-      minmax(0, 160px)
-      minmax(0, 160px)
-      auto
-      auto
-      auto;
+@media (max-width: 1120px) {
+  .groups-toolbar__filters {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 180px) auto auto auto;
     width: 100%;
   }
 }
 
-@media (max-width: 860px) {
-  .tasks-toolbar__filters {
+@media (max-width: 760px) {
+  .groups-toolbar__filters {
     grid-template-columns: 1fr;
   }
 }

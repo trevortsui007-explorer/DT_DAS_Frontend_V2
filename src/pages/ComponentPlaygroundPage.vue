@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import {
   DTButton,
@@ -22,7 +22,8 @@ import type {
   DTSelectOption,
   DTSelectValue,
   DTTableColumn,
-  DTTableRow
+  DTTableRow,
+  PaginationConfig 
 } from '@/shared/components'
 
 import { confirm, message } from '@/shared/composables'
@@ -34,8 +35,17 @@ const saving = ref(false)
 const keyword = ref('')
 const status = ref<DTSelectValue | ''>('')
 
-const page = ref(1)
-const pageSize = ref(10)
+const tableLoading = ref(false)
+const tableShowEmpty = ref(false)
+
+const tablePagination = ref<PaginationConfig>({
+  page: 1,
+  pageSize: 10,
+  total: 36,
+  pageSizes: [10, 20, 50, 100],
+  showPageSize: true,
+  showTotal: true
+})
 
 const statusOptions: DTSelectOption[] = [
   {
@@ -54,14 +64,39 @@ const statusOptions: DTSelectOption[] = [
 
 const tableColumns: DTTableColumn[] = [
   {
+    key: 'selection',
+    type: 'selection',
+    width: 52,
+    align: 'center',
+    fixed: 'left'
+  },
+  {
+    key: 'expand',
+    type: 'expand',
+    width: 52,
+    align: 'center',
+    fixed: 'left'
+  },
+  {
     key: 'name',
     title: '配置名称',
-    minWidth: 180
+    minWidth: 220,
+    fixed: 'left',
+    sortable: true,
+    showOverflowTooltip: true
   },
   {
     key: 'targetTable',
     title: '目标表',
-    minWidth: 160
+    minWidth: 180,
+    sortable: 'custom',
+    showOverflowTooltip: true
+  },
+  {
+    key: 'owner.name',
+    title: '负责人',
+    minWidth: 120,
+    align: 'center'
   },
   {
     key: 'status',
@@ -72,33 +107,222 @@ const tableColumns: DTTableColumn[] = [
   {
     key: 'lastRunTime',
     title: '最近执行时间',
-    minWidth: 180
+    minWidth: 180,
+    sortable: true
+  },
+  {
+    key: 'remark',
+    title: '备注',
+    minWidth: 260,
+    showOverflowTooltip: true
+  },
+  {
+    key: 'actions',
+    title: '操作',
+    width: 160,
+    align: 'center',
+    fixed: 'right'
   }
 ]
 
-const tableData: DTTableRow[] = [
+const childTableColumns: DTTableColumn[] = [
+  {
+    key: 'fieldName',
+    title: '字段名称',
+    minWidth: 160
+  },
+  {
+    key: 'sourceField',
+    title: '来源字段',
+    minWidth: 160
+  },
+  {
+    key: 'targetField',
+    title: '目标字段',
+    minWidth: 160
+  },
+  {
+    key: 'dataType',
+    title: '数据类型',
+    width: 120,
+    align: 'center'
+  },
+  {
+    key: 'required',
+    title: '是否必填',
+    width: 120,
+    align: 'center'
+  },
+  {
+    key: 'remark',
+    title: '说明',
+    minWidth: 220,
+    showOverflowTooltip: true
+  }
+]
+
+const tableRawData: DTTableRow[] = [
   {
     id: 1,
     name: 'MES 数据采集配置',
     targetTable: 'DA_MES_Data',
+    owner: {
+      name: '张工'
+    },
     status: 'enabled',
-    lastRunTime: '2026-04-29 08:30:00'
+    lastRunTime: '2026-04-29 08:30:00',
+    remark: '用于采集 MES 侧核心生产数据，字段较多时会触发溢出省略展示。',
+    children: [
+      {
+        id: '1-1',
+        fieldName: '批次号',
+        sourceField: 'LotNo',
+        targetField: 'lot_no',
+        dataType: 'varchar',
+        required: true,
+        remark: '生产批次唯一标识'
+      },
+      {
+        id: '1-2',
+        fieldName: '产品型号',
+        sourceField: 'ProdNo',
+        targetField: 'prod_no',
+        dataType: 'varchar',
+        required: true,
+        remark: '用于关联产品主数据'
+      },
+      {
+        id: '1-3',
+        fieldName: '创建时间',
+        sourceField: 'CreateTime',
+        targetField: 'create_time',
+        dataType: 'datetime',
+        required: false,
+        remark: '来源系统记录创建时间'
+      }
+    ]
   },
   {
     id: 2,
     name: 'WIP Lot 数据配置',
     targetTable: 'QA_UBWipLot',
+    owner: {
+      name: 'Lee'
+    },
     status: 'enabled',
-    lastRunTime: '2026-04-29 09:10:00'
+    lastRunTime: '2026-04-29 09:10:00',
+    remark: '用于同步 WIP 在制批次数据。',
+    children: [
+      {
+        id: '2-1',
+        fieldName: '批次号',
+        sourceField: 'LotNo',
+        targetField: 'lotno',
+        dataType: 'varchar',
+        required: true,
+        remark: '用于判断当前 WIP 批次'
+      },
+      {
+        id: '2-2',
+        fieldName: '站点',
+        sourceField: 'StationCode',
+        targetField: 'station_code',
+        dataType: 'varchar',
+        required: false,
+        remark: '当前批次所在工序站点'
+      }
+    ]
   },
   {
     id: 3,
     name: 'Scrap 数据配置',
     targetTable: 'DA_Scrap_Data',
+    owner: {
+      name: '王工'
+    },
     status: 'disabled',
-    lastRunTime: '-'
+    lastRunTime: '-',
+    remark: '当前配置已停用，不参与自动任务执行。',
+    children: []
+  },
+  {
+    id: 4,
+    name: 'OQC 检验结果同步配置',
+    targetTable: 'QA_OQC_Result',
+    owner: {
+      name: 'Trevor'
+    },
+    status: 'enabled',
+    lastRunTime: '2026-04-30 10:20:00',
+    remark: '测试固定列、排序、展开行、多选和分页联动。',
+    children: [
+      {
+        id: '4-1',
+        fieldName: '检验结果',
+        sourceField: 'FinalResult',
+        targetField: 'final_result',
+        dataType: 'varchar',
+        required: true,
+        remark: 'OQC 最终判定结果'
+      },
+      {
+        id: '4-2',
+        fieldName: '检验时间',
+        sourceField: 'CheckTime',
+        targetField: 'check_time',
+        dataType: 'datetime',
+        required: false,
+        remark: 'OQC 检验完成时间'
+      }
+    ]
   }
 ]
+
+const tableData = computed(() => {
+  return tableShowEmpty.value ? [] : tableRawData
+})
+
+function getTableText(row: DTTableRow, key: string) {
+  const value = key.split('.').reduce<any>((acc, cur) => acc?.[cur], row)
+  return value === null || value === undefined || value === '' ? '-' : String(value)
+}
+
+function handleRowClick(row: DTTableRow, index: number) {
+  message.info(`点击了第 ${index + 1} 行：${getTableText(row, 'name')}`)
+}
+
+function handleSelectionChange(selectedRows: DTTableRow[]) {
+  message.info(`已选择 ${selectedRows.length} 条数据`)
+}
+
+function handleSortChange(payload: {
+  column: DTTableColumn
+  prop: string
+  order: 'asc' | 'desc' | null
+}) {
+  message.info(`排序变化：${payload.prop} / ${payload.order || '取消排序'}`)
+}
+
+function handleTablePaginationUpdate(config: PaginationConfig) {
+  tablePagination.value = config
+}
+
+function handleTablePageChange(page: number, pageSize: number) {
+  message.info(`分页变化：第 ${page} 页 / ${pageSize} 条`)
+}
+
+function toggleTableLoading() {
+  tableLoading.value = true
+
+  window.setTimeout(() => {
+    tableLoading.value = false
+    message.success('表格加载完成')
+  }, 1000)
+}
+
+function toggleTableEmpty() {
+  tableShowEmpty.value = !tableShowEmpty.value
+}
 
 function handleShowMessage(type: 'success' | 'info' | 'warning' | 'error' | 'loading') {
   if (type === 'loading') {
@@ -155,10 +379,6 @@ async function handleConfirmDanger() {
   }
 
   message.success('模拟删除成功')
-}
-
-function handleRowClick(row: DTTableRow) {
-  message.info(`点击了：${row.name}`)
 }
 
 function handlePaginationChange(payload: { page: number; pageSize: number }) {
@@ -328,24 +548,57 @@ function handlePaginationChange(payload: { page: number; pageSize: number }) {
 
     <DTCard title="Table">
       <div class="table-demo">
+        <div class="component-row">
+          <DTButton
+            type="primary"
+            size="sm"
+            @click="toggleTableLoading"
+          >
+            模拟 Loading
+          </DTButton>
+
+          <DTButton
+            size="sm"
+            @click="toggleTableEmpty"
+          >
+            {{ tableShowEmpty ? '恢复数据' : '模拟空数据' }}
+          </DTButton>
+        </div>
+
         <DTTable
           :columns="tableColumns"
           :data="tableData"
           row-key="id"
           height="320px"
+          border
+          stripe
+          empty-text="当前没有配置数据"
+          :loading="tableLoading"
+          :pagination="tablePagination"
           @row-click="handleRowClick"
+          @selection-change="handleSelectionChange"
+          @sort-change="handleSortChange"
+          @update:pagination="handleTablePaginationUpdate"
+          @page-change="handleTablePageChange"
         >
+          <template #header-name="{ column }">
+            <span>{{ column.title }}</span>
+            <DTTag type="primary" size="sm">
+              重点
+            </DTTag>
+          </template>
+
           <template #cell-status="{ value }">
             <DTTag :type="value === 'enabled' ? 'success' : 'info'">
               {{ value === 'enabled' ? '启用' : '禁用' }}
             </DTTag>
           </template>
 
-          <template #actions="{ row }">
+          <template #cell-actions="{ row }">
             <div class="table-actions">
               <DTButton
                 size="sm"
-                @click.stop="message.info(`查看：${row.name}`)"
+                @click.stop="message.info(`查看：${getTableText(row, 'name')}`)"
               >
                 查看
               </DTButton>
@@ -353,20 +606,33 @@ function handlePaginationChange(payload: { page: number; pageSize: number }) {
               <DTButton
                 size="sm"
                 type="primary"
-                @click.stop="message.success(`编辑：${row.name}`)"
+                @click.stop="message.success(`编辑：${getTableText(row, 'name')}`)"
               >
                 编辑
               </DTButton>
             </div>
           </template>
-        </DTTable>
 
-        <DTPagination
-          v-model:page="page"
-          v-model:page-size="pageSize"
-          :total="36"
-          @change="handlePaginationChange"
-        />
+          <template #expand="{ row }">
+            <div class="table-expand-table">
+              <DTTable
+                :columns="childTableColumns"
+                :data="Array.isArray(row.children) ? row.children : []"
+                row-key="id"
+                size="sm"
+                border
+                stripe
+                empty-text="当前配置暂无字段映射"
+              >
+                <template #cell-required="{ value }">
+                  <DTTag :type="value ? 'success' : 'info'">
+                    {{ value ? '是' : '否' }}
+                  </DTTag>
+                </template>
+              </DTTable>
+            </div>
+          </template>
+        </DTTable>
       </div>
     </DTCard>
 
@@ -504,7 +770,8 @@ function handlePaginationChange(payload: { page: number; pageSize: number }) {
 .table-actions {
   display: inline-flex;
   gap: var(--dt-space-2);
-  justify-content: flex-end;
+  justify-content: center;
+  align-items: center;
 }
 
 .drawer-demo {
@@ -543,6 +810,12 @@ function handlePaginationChange(payload: { page: number; pageSize: number }) {
   border-radius: var(--dt-radius-sm);
   color: var(--dt-color-primary);
   background: var(--dt-bg-muted);
+}
+
+.table-expand-table {
+  padding: var(--dt-space-1) var(--dt-space-1) var(--dt-space-1) var(--dt-space-8);
+  background: var(--dt-bg-muted);
+  border-radius: var(--dt-radius-md);
 }
 
 @media (max-width: 960px) {

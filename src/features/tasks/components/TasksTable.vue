@@ -1,8 +1,28 @@
 <script setup lang="ts">
-import { DTButton, DTTable, DTTag } from '@/shared/components'
-import type { DTTableColumn, DTTableRow } from '@/shared/components'
+import {
+  CheckCircleOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  EyeOutlined,
+  PlayCircleOutlined,
+  StopOutlined
+} from '@ant-design/icons-vue'
+
+import {
+  DTButton,
+  DTTable,
+  DTTag
+} from '@/shared/components'
+
+import type {
+  DTTableColumn,
+  DTTableRow
+} from '@/shared/components'
 
 import type { TaskItem } from '@/api'
+
+import { getTaskModeTagType, getTaskModeText } from '../utils/task-mode'
+import { formatCronText, formatDateTime } from '../utils/task-cron-format'
 
 defineProps<{
   data: TaskItem[]
@@ -10,55 +30,86 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'view', row: TaskItem): void
-  (e: 'edit', row: TaskItem): void
-  (e: 'toggle', row: TaskItem): void
+  view: [row: TaskItem]
+  edit: [row: TaskItem]
+  toggle: [row: TaskItem]
+  delete: [row: TaskItem]
+  execute: [row: TaskItem]
+  selectionChange: [rows: TaskItem[]]
 }>()
 
 const columns: DTTableColumn[] = [
   {
-    key: 'name',
-    title: '任务名称',
-    minWidth: 180
+    key: 'selection',
+    type: 'selection',
+    width: 52,
+    align: 'center',
+    fixed: 'left'
   },
   {
-    key: 'cron',
+    key: 'taskName',
+    title: '任务名称',
+    minWidth: 220,
+    fixed: 'left',
+    showOverflowTooltip: true
+  },
+  {
+    key: 'taskMode',
+    title: '任务类型',
+    width: 120,
+    align: 'center',
+    sortable: true
+  },
+  {
+    key: 'cronExpression',
     title: 'Cron 表达式',
-    minWidth: 180
+    minWidth: 180,
+    align: 'center',
+    showOverflowTooltip: true
   },
   {
     key: 'isEnabled',
     title: '状态',
     width: 100,
-    align: 'center'
+    align: 'center',
+    sortable: true
+  },
+  {
+    key: 'updateTime',
+    title: '更新时间',
+    minWidth: 220,
+    showOverflowTooltip: true
+  },
+  {
+    key: 'actions',
+    title: '操作',
+    width: 220,
+    align: 'center',
+    fixed: 'right'
   }
 ]
 
-function getDisplayName(row: TaskItem) {
-  return row.name || row.taskName || '-'
-}
-
-function getCron(row: TaskItem) {
-  return row.cron || row.cronExpression || '-'
+function getEnabled(row: TaskItem) {
+  return Number(row.isEnabled) === 1
 }
 
 function handleAction(
-  type: 'view' | 'edit' | 'toggle',
+  type: 'view' | 'edit' | 'toggle' | 'delete' | 'execute',
   row: DTTableRow
 ) {
-  const task = row as TaskItem
-
-  if (type === 'view') {
-    emit('view', task)
-    return
+  const actions = {
+    view: () => emit('view', row as TaskItem),
+    edit: () => emit('edit', row as TaskItem),
+    toggle: () => emit('toggle', row as TaskItem),
+    delete: () => emit('delete', row as TaskItem),
+    execute: () => emit('execute', row as TaskItem)
   }
 
-  if (type === 'edit') {
-    emit('edit', task)
-    return
-  }
+  actions[type]()
+}
 
-  emit('toggle', task)
+function handleSelectionChange(rows: DTTableRow[]) {
+  emit('selectionChange', rows as TaskItem[])
 }
 </script>
 
@@ -68,37 +119,78 @@ function handleAction(
     :data="data as DTTableRow[]"
     row-key="id"
     :loading="loading"
+    height="520px"
+    border
+    @selection-change="handleSelectionChange"
   >
-    <template #cell-name="{ row }">
-      {{ getDisplayName(row as TaskItem) }}
-    </template>
-
-    <template #cell-cron="{ row }">
-      {{ getCron(row as TaskItem) }}
-    </template>
-
-    <template #cell-isEnabled="{ value }">
-      <DTTag :type="value ? 'success' : 'info'">
-        {{ value ? '启用' : '禁用' }}
+    <template #cell-taskMode="{ value }">
+      <DTTag :type="getTaskModeTagType(value)">
+        {{ getTaskModeText(value) }}
       </DTTag>
     </template>
 
-    <template #actions="{ row }">
-      <div class="table-actions">
-        <DTButton size="sm" @click.stop="handleAction('view', row)">
-          查看
-        </DTButton>
+    <template #cell-cronExpression="{ value }">
+      <div class="cron-cell">
+        <span class="cron-cell__raw">{{ value || '-' }}</span>
+        <span class="cron-cell__text">{{ formatCronText(String(value || '')) }}</span>
+      </div>
+    </template>
 
-        <DTButton size="sm" type="primary" @click.stop="handleAction('edit', row)">
-          编辑
+    <template #cell-updateTime="{ value }">
+      {{ formatDateTime(String(value || '')) }}
+    </template>
+
+    <template #cell-isEnabled="{ row }">
+      <DTTag :type="getEnabled(row as TaskItem) ? 'success' : 'info'">
+        {{ getEnabled(row as TaskItem) ? '启用' : '禁用' }}
+      </DTTag>
+    </template>
+
+    <template #cell-actions="{ row }">
+      <div class="table-actions">
+        <DTButton
+          size="sm"
+          title="查看"
+          @click.stop="handleAction('view', row)"
+        >
+          <EyeOutlined />
         </DTButton>
 
         <DTButton
           size="sm"
-          :type="row.isEnabled ? 'warning' : 'success'"
+          type="primary"
+          title="编辑"
+          @click.stop="handleAction('edit', row)"
+        >
+          <EditOutlined />
+        </DTButton>
+
+        <DTButton
+          size="sm"
+          type="success"
+          title="执行"
+          @click.stop="handleAction('execute', row)"
+        >
+          <PlayCircleOutlined />
+        </DTButton>
+
+        <DTButton
+          size="sm"
+          :type="getEnabled(row as TaskItem) ? 'warning' : 'success'"
+          :title="getEnabled(row as TaskItem) ? '禁用' : '启用'"
           @click.stop="handleAction('toggle', row)"
         >
-          {{ row.isEnabled ? '禁用' : '启用' }}
+          <StopOutlined v-if="getEnabled(row as TaskItem)" />
+          <CheckCircleOutlined v-else />
+        </DTButton>
+
+        <DTButton
+          size="sm"
+          type="danger"
+          title="删除"
+          @click.stop="handleAction('delete', row)"
+        >
+          <DeleteOutlined />
         </DTButton>
       </div>
     </template>
@@ -108,7 +200,43 @@ function handleAction(
 <style scoped lang="scss">
 .table-actions {
   display: inline-flex;
+  justify-content: center;
   gap: var(--dt-space-2);
-  justify-content: flex-end;
+  width: 100%;
+}
+
+.table-actions :deep(.dt-button) {
+  width: 32px;
+  padding: 0;
+}
+
+.table-actions :deep(.anticon) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.cron-cell {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cron-cell__text {
+  color: var(--dt-text-primary);
+  font-family:
+    Consolas,
+    Monaco,
+    'Courier New',
+    monospace;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cron-cell__raw {
+  color: var(--dt-text-muted);
+  font-size: 12px;
 }
 </style>

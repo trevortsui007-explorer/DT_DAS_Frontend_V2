@@ -4,15 +4,18 @@ import type {
   ConfigGroupDetail,
   ConfigGroupItem,
   CreateGroupPayload,
-  GroupStatusQuery,
-  GroupStatusResult,
   SetGroupStatusPayload,
   UpdateGroupPayload
 } from '@/api/types/group.types'
 
-function normalizeIds(value?: Array<number | string> | string) {
-  if (!value) return undefined
-  return Array.isArray(value) ? value.join(',') : value
+function buildIdsQuery(ids: Array<number | string>) {
+  const params = new URLSearchParams()
+
+  ids.forEach((id) => {
+    params.append('ids', String(id))
+  })
+
+  return params.toString()
 }
 
 export function fetchGroups() {
@@ -36,46 +39,27 @@ export function deleteGroup(id: number | string) {
 }
 
 export function setGroupStatus(payload: SetGroupStatusPayload) {
-  const formData = new FormData()
+  const idsQuery = buildIdsQuery(payload.ids)
 
-  formData.append('ids', payload.ids.join(','))
-  formData.append('isEnabled', String(payload.isEnabled))
-
-  return request.patch('/api/file-configs/group/status/', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    }
-  })
+  return request.patch(
+    `/api/file-configs/group/status/?${idsQuery}&isEnabled=${payload.isEnabled}`
+  )
 }
 
-export function fetchGroupStatus(query: GroupStatusQuery) {
-  return request.get<GroupStatusResult>('/api/file-configs/group/status/', {
-    params: {
-      ids: normalizeIds(query.ids)
-    }
-  })
+export function bindConfigsToGroup(
+  groupId: number | string,
+  ids: Array<number | string>
+) {
+  const idsQuery = buildIdsQuery(ids)
+
+  return request.post(`/api/file-configs/group/${groupId}/configs?${idsQuery}`)
 }
 
-export function bindConfigsToGroup(groupId: number | string, ids: Array<number | string>) {
-  const params = new URLSearchParams()
+export function removeConfigsFromGroup(
+  groupId: number | string,
+  ids: Array<number | string>
+) {
+  const idsQuery = buildIdsQuery(ids)
 
-  ids.forEach((id) => {
-    params.append('ids', String(id))
-  })
-
-  return request.post(`/api/file-configs/group/${groupId}/configs`, null, {
-    params
-  })
-}
-
-export function removeConfigsFromGroup(groupId: number | string, ids: Array<number | string>) {
-  const params = new URLSearchParams()
-
-  ids.forEach((id) => {
-    params.append('ids', String(id))
-  })
-
-  return request.delete(`/api/file-configs/group/${groupId}/configs`, {
-    params
-  })
+  return request.delete(`/api/file-configs/group/${groupId}/configs?${idsQuery}`)
 }

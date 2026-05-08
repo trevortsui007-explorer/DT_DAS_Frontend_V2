@@ -1,6 +1,7 @@
 import request from '@/api/request'
 
 import type {
+  AssignTaskGroupsPayload,
   CreateTaskPayload,
   SetTaskStatusPayload,
   TaskDetail,
@@ -13,12 +14,12 @@ export function fetchTasks() {
   return request.get<TaskItem[]>('/api/data-acquisition/tasks')
 }
 
-export function fetchTaskById(id: number | string) {
-  return request.get<TaskDetail>(`/api/data-acquisition/tasks/${id}`)
-}
-
 export function fetchTasksByMode(mode: TaskMode) {
   return request.get<TaskItem[]>(`/api/data-acquisition/tasks/mode/${mode}`)
+}
+
+export function fetchTaskById(id: number | string) {
+  return request.get<TaskDetail>(`/api/data-acquisition/tasks/${id}`)
 }
 
 export function createTask(data: CreateTaskPayload) {
@@ -47,13 +48,13 @@ export function setTaskStatus(payload: SetTaskStatusPayload) {
 }
 
 export function fetchTaskGroups(taskId: number | string) {
-  return request.get(`/api/data-acquisition/tasks/${taskId}/groups`)
+  return request.get<number[]>(`/api/data-acquisition/tasks/${taskId}/groups`)
 }
 
-export function assignTaskGroups(taskId: number | string, ids: Array<number | string>) {
-  return request.post(`/api/data-acquisition/tasks/${taskId}/groups`, null, {
+export function assignTaskGroups(payload: AssignTaskGroupsPayload) {
+  return request.post(`/api/data-acquisition/tasks/${payload.taskId}/groups`, null, {
     params: {
-      ids: ids.join(',')
+      ids: payload.ids.join(',')
     }
   })
 }
