@@ -35,11 +35,11 @@ export function useTaskLogsList() {
   ]
 
   function getTaskId(row: TaskItem) {
-    return row.id ?? row.Id
+    return row.id
   }
 
   function getTaskName(row: TaskItem) {
-    return row.name || row.taskName || row.TaskName || `任务 ${getTaskId(row)}`
+    return row.taskName || `任务 ${getTaskId(row)}`
   }
 
   function buildQuery(): TaskLogQuery {

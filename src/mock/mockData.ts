@@ -228,50 +228,54 @@ export const mockTasksData: TaskItem[] = [
   {
     id: 1,
     taskName: 'DA_MasonET',
-    name: 'DA_MasonET',
-    TaskMode: 0,
-    cron: '0,30 0 * * *',
+    taskMode: 0,
     cronExpression: '0,30 0 * * *',
-    isEnabled: true,
+    isEnabled: 1,
     description: '包含麦逊 A 区和 B 区所有电测机台的数据采集任务',
     createTime: '2026-03-02 11:41:35',
-    updateTime: '2026-05-06 17:47:56'
+    updateTime: '2026-05-06 17:47:56',
+    groupCount: 2,
+    associatedGroups: [],
+    groupIds: [1, 2]
   },
   {
     id: 2,
     taskName: '环境数据采集任务',
-    name: '环境数据采集任务',
-    TaskMode: 0,
-    cron: '0,30 0 * * *',
+    taskMode: 0,
     cronExpression: '0,30 0 * * *',
-    isEnabled: true,
+    isEnabled: 1,
     description: '每 10 分钟采集一次温湿度',
     createTime: '2026-03-20 17:41:35',
-    updateTime: '2026-03-20 17:41:35'
+    updateTime: '2026-03-20 17:41:35',
+    groupCount: 0,
+    associatedGroups: [],
+    groupIds: []
   },
   {
     id: 4,
     taskName: 'HangFire定时采集任务测试',
-    name: 'HangFire定时采集任务测试',
-    TaskMode: 1,
-    cron: '17 16 * * *',
+    taskMode: 1,
     cronExpression: '17 16 * * *',
-    isEnabled: true,
+    isEnabled: 1,
     description: '本地测试采集',
     createTime: '2026-03-21 14:23:33',
-    updateTime: '2026-03-21 14:23:33'
+    updateTime: '2026-03-21 14:23:33',
+    groupCount: 1,
+    associatedGroups: [],
+    groupIds: [3]
   },
   {
     id: 6,
     taskName: '测试任务',
-    name: '测试任务',
-    TaskMode: 1,
-    cron: '*/30 * * * *',
+    taskMode: 1,
     cronExpression: '*/30 * * * *',
-    isEnabled: true,
+    isEnabled: 1,
     description: '测试任务',
     createTime: '2026-05-06 17:54:33',
-    updateTime: '2026-05-07 08:44:16'
+    updateTime: '2026-05-07 08:44:16',
+    groupCount: 0,
+    associatedGroups: [],
+    groupIds: []
   }
 ]
 
