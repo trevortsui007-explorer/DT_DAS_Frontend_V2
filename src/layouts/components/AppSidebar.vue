@@ -1,12 +1,19 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+
 const menus = [
-  { title: '总览', path: '/overview' },
-  { title: '配置管理', path: '/configs' },
-  { title: '分组管理', path: '/groups' },
-  { title: '任务管理', path: '/tasks' },
-  { title: '执行日志', path: '/task-logs' },
-  { title: '组件示例', path: '/playground' },
+  { title: '总览', path: '/overview', icon: 'OV' },
+  { title: '配置管理', path: '/configs', icon: 'CF' },
+  { title: '分组管理', path: '/groups', icon: 'GP' },
+  { title: '任务管理', path: '/tasks', icon: 'TK' },
+  { title: '执行日志', path: '/task-logs', icon: 'LG' },
+  { title: '组件示例', path: '/playground', icon: 'UI' },
 ]
+
+const activePath = computed(() => route.path)
 </script>
 
 <template>
@@ -25,9 +32,10 @@ const menus = [
         :key="item.path"
         :to="item.path"
         class="app-sidebar__link"
-        active-class="is-active"
+        :class="{ 'is-active': activePath === item.path }"
       >
-        {{ item.title }}
+        <span class="app-sidebar__icon">{{ item.icon }}</span>
+        <span>{{ item.title }}</span>
       </RouterLink>
     </nav>
   </aside>

@@ -4,6 +4,7 @@ import type { PageResult } from '@/api/types/common.types'
 import type {
   AcquisitionLogPayload,
   NextStartRowResult,
+  TaskLogDetail,
   TaskLogItem,
   TaskLogPayload,
   TaskLogQuery,
@@ -37,4 +38,8 @@ export function fetchTaskLogs(params: TaskLogQuery = {}) {
       endTime: params.endTime || undefined
     }
   })
+}
+
+export function fetchTaskLogDetail(id: number | string) {
+  return request.get<TaskLogDetail>(`/api/data-acquisition/execution/task-logs/${id}`)
 }

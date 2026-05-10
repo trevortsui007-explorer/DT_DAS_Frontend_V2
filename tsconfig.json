@@ -4,6 +4,7 @@
   "exclude": ["src/**/__tests__/*"],
   "compilerOptions": {
     "composite": true,
+    "ignoreDeprecations": "6.0",
     "baseUrl": ".",                // 1. 设置基准目录
     "paths": {
       "@/*": ["./src/*"]          // 2. 设置别名映射

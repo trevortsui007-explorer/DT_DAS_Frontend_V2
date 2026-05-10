@@ -11,10 +11,11 @@ export type TaskLogItem = {
   taskLogId?: string
   id?: string
   taskId?: number
+  taskName?: string
   taskCode?: string
   triggerType?: string
   startTime?: string
-  endTime?: string
+  endTime?: string | null
   status?: ExecutionStatus
   totalConfigs?: number
   successCount?: number
@@ -22,6 +23,24 @@ export type TaskLogItem = {
   processedCount?: number
   progress?: number
   message?: string
+}
+
+export type AcquisitionLogItem = {
+  id?: string
+  taskLogId?: string
+  configId?: number
+  configName?: string
+  fileName?: string
+  startRow?: number
+  processedRows?: number
+  startTime?: string
+  endTime?: string | null
+  status?: ExecutionStatus
+  errorMessage?: string | null
+}
+
+export type TaskLogDetail = TaskLogItem & {
+  details?: AcquisitionLogItem[]
 }
 
 export type AcquisitionLogPayload = {
