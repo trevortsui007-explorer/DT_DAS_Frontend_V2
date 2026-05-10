@@ -5,7 +5,9 @@ import type {
   ExecutionStatusResult,
   StartExecutionByIdsPayload,
   StartExecutionByRangePayload,
-  StartExecutionConfigsRangePayload
+  StartExecutionByTasksPayload,
+  StartExecutionConfigsRangePayload,
+  TaskStartResponse
 } from '@/api/types/execution.types'
 
 function appendIds(params: URLSearchParams, key: string, values?: Array<number | string>) {
@@ -70,6 +72,17 @@ export function executeConfigsRange(ids: Array<number | string>, startDate?: str
   })
 }
 
+/**
+ * 通用执行入口：
+ * POST /api/data-acquisition/execution/start/by-ids
+ *
+ * 可传：
+ * - ids
+ * - groupIds
+ * - taskIds
+ *
+ * 注意：这个方法仍然保留，用于兼容 by-ids 通用入口。
+ */
 export function startExecution(payload: StartExecutionByIdsPayload) {
   const params = new URLSearchParams()
 
@@ -81,7 +94,7 @@ export function startExecution(payload: StartExecutionByIdsPayload) {
     params.append('processDate', payload.processDate)
   }
 
-  return request.post('/api/data-acquisition/execution/start/by-ids', null, {
+  return request.post<TaskStartResponse>('/api/data-acquisition/execution/start/by-ids', null, {
     params
   })
 }
@@ -100,24 +113,38 @@ export function startExecutionByGroups(groupIds: Array<number | string>, process
   })
 }
 
-export function startExecutionByTasks(taskIds: Array<number | string>, processDate?: string) {
-  return startExecution({
-    taskIds,
-    processDate
-  })
+/**
+ * 任务执行入口：
+ * POST /api/data-acquisition/execution/start/by-tasks?taskIds=1,4
+ */
+export function startExecutionByTasks(payload: StartExecutionByTasksPayload) {
+  return request.post<TaskStartResponse>(
+    '/api/data-acquisition/execution/start/by-tasks',
+    null,
+    {
+      params: {
+        taskIds: payload.taskIds.join(','),
+        processDate: payload.processDate || undefined
+      }
+    }
+  )
 }
 
 export function startExecutionByRange(payload: StartExecutionByRangePayload) {
-  return request.post(`/api/data-acquisition/execution/start/by-range/${payload.id}`, null, {
-    params: {
-      startDate: payload.startDate,
-      endDate: payload.endDate
+  return request.post<TaskStartResponse>(
+    `/api/data-acquisition/execution/start/by-range/${payload.id}`,
+    null,
+    {
+      params: {
+        startDate: payload.startDate,
+        endDate: payload.endDate
+      }
     }
-  })
+  )
 }
 
 export function startExecutionConfigsRange(payload: StartExecutionConfigsRangePayload) {
-  return request.post(
+  return request.post<TaskStartResponse>(
     '/api/data-acquisition/execution/start/configs-range',
     {
       ids: payload.ids,
