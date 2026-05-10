@@ -2,7 +2,10 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
+import { useAppStore } from '@/app/stores/app.store'
+
 const route = useRoute()
+const appStore = useAppStore()
 
 const menus = [
   { title: '总览', path: '/overview', icon: 'OV' },
@@ -14,6 +17,7 @@ const menus = [
 ]
 
 const activePath = computed(() => route.path)
+const isDarkMode = computed(() => appStore.theme === 'dark')
 </script>
 
 <template>
@@ -38,5 +42,23 @@ const activePath = computed(() => route.path)
         <span>{{ item.title }}</span>
       </RouterLink>
     </nav>
+
+    <div class="app-sidebar__footer">
+      <button
+        class="app-sidebar__theme"
+        type="button"
+        :aria-label="isDarkMode ? '切换到白天模式' : '切换到暗夜模式'"
+        :title="isDarkMode ? '当前暗夜模式，点击切换白天模式' : '当前白天模式，点击切换暗夜模式'"
+        @click="appStore.toggleTheme"
+      >
+        <span
+          class="app-sidebar__theme-icon"
+          aria-hidden="true"
+        >
+          {{ isDarkMode ? '☾' : '☀' }}
+        </span>
+        <span>{{ isDarkMode ? '暗夜模式' : '白天模式' }}</span>
+      </button>
+    </div>
   </aside>
 </template>

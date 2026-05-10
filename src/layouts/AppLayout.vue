@@ -1,17 +1,14 @@
 <script setup lang="ts">
-import { watchEffect } from 'vue'
-import { useRoute } from 'vue-router'
+import { onMounted } from 'vue'
 
-import { useAppStore, type AppTheme } from '@/app/stores/app.store'
+import { useAppStore } from '@/app/stores/app.store'
 import AppSidebar from './components/AppSidebar.vue'
 import AppHeader from './components/AppHeader.vue'
 
-const route = useRoute()
 const appStore = useAppStore()
 
-watchEffect(() => {
-  const theme = (route.meta.theme || 'default') as AppTheme
-  appStore.setTheme(theme)
+onMounted(() => {
+  appStore.initTheme()
 })
 </script>
 

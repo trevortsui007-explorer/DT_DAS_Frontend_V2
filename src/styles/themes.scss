@@ -1,4 +1,11 @@
+[data-theme='light'],
 [data-theme='default'] {
+  --dt-color-primary: #2563eb;
+  --dt-color-success: #16a34a;
+  --dt-color-warning: #d97706;
+  --dt-color-danger: #dc2626;
+  --dt-color-info: #64748b;
+
   --dt-bg-page: #f5f7fa;
   --dt-bg-surface: #ffffff;
   --dt-bg-muted: #f1f5f9;
@@ -9,8 +16,13 @@
   --dt-text-muted: #94a3b8;
 
   --dt-border-subtle: #e2e8f0;
+  --dt-border-strong: #cbd5e1;
+
+  --dt-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --dt-shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
 }
 
+[data-theme='dark'],
 [data-theme='monitor'] {
   --dt-color-primary: #38bdf8;
   --dt-color-success: #34d399;
