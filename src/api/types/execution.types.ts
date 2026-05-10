@@ -7,10 +7,22 @@ export type ExecutionStatus =
   | 'Completed'
   | string
 
+export type TaskStartResponse = {
+  taskLogId?: string
+  taskCode?: string
+  status?: ExecutionStatus
+  message?: string
+}
+
 export type StartExecutionByIdsPayload = {
   ids?: Array<number | string>
   groupIds?: Array<number | string>
   taskIds?: Array<number | string>
+  processDate?: string
+}
+
+export type StartExecutionByTasksPayload = {
+  taskIds: Array<number | string>
   processDate?: string
 }
 

@@ -2,6 +2,15 @@ export type TaskMode = 0 | 1
 
 export type TaskEnabledStatus = 0 | 1
 
+export type TaskAssociatedGroup = {
+  id: number
+  groupName: string
+  groupCategory: string
+  groupType: string
+  configCount: number
+  isEnabled: TaskEnabledStatus
+}
+
 export type TaskItem = {
   id: number
   taskName: string
@@ -11,12 +20,12 @@ export type TaskItem = {
   description?: string
   createTime?: string
   updateTime?: string
+  groupCount: number
+  associatedGroups: TaskAssociatedGroup[]
+  groupIds: number[]
 }
 
-export type TaskDetail = TaskItem & {
-  groupIds?: number[]
-  groupNames?: string[]
-}
+export type TaskDetail = TaskItem
 
 export type CreateTaskPayload = {
   taskName: string

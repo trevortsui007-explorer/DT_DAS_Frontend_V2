@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
-import { DTCard } from '@/shared/components'
+import { DTButton, DTCard } from '@/shared/components'
 import { confirm, message } from '@/shared/composables'
 
 import {
+  TaskBindGroupsDrawer,
   TaskDetailDrawer,
   TaskFormModal,
   TasksTable,
@@ -15,13 +16,14 @@ import {
 import {
   createTask,
   deleteTasks,
+  startExecutionByTasks,
   updateTask,
   type CreateTaskPayload,
+  type TaskAssociatedGroup,
   type TaskItem,
+  type TaskStartResponse,
   type UpdateTaskPayload
 } from '@/api'
-
-import type { TaskFormMode } from '@/features/tasks'
 
 const {
   loading,
@@ -40,9 +42,15 @@ const detailOpen = ref(false)
 const formOpen = ref(false)
 const formLoading = ref(false)
 
-const formMode = ref<TaskFormMode>('create')
+const bindGroupsOpen = ref(false)
+const bindGroupsLoading = ref(false)
+
+const formMode = ref<'create' | 'edit'>('create')
 const currentTask = ref<TaskItem | null>(null)
 const selectedTasks = ref<TaskItem[]>([])
+
+const executingTaskIds = ref<Array<number | string>>([])
+const batchExecuting = ref(false)
 
 onMounted(() => {
   loadTasks()
@@ -98,8 +106,84 @@ async function handleDelete(row: TaskItem) {
   await loadTasks()
 }
 
-function handleExecute(row: TaskItem) {
-  message.info(`执行任务功能后续接入：${row.taskName}`)
+function isTaskExecuting(row: TaskItem) {
+  return executingTaskIds.value.includes(row.id)
+}
+
+function showExecutionSuccess(result?: TaskStartResponse) {
+  if (result?.taskCode) {
+    message.success(`任务已提交执行，任务编号：${result.taskCode}`)
+    return
+  }
+
+  if (result?.taskLogId) {
+    message.success(`任务已提交执行，日志ID：${result.taskLogId}`)
+    return
+  }
+
+  message.success(result?.message || '任务已提交执行')
+}
+
+async function handleExecute(row: TaskItem) {
+  if (isTaskExecuting(row)) return
+
+  const ok = await confirm({
+    title: '确认执行任务',
+    content: `任务：${row.taskName}\n执行后系统将立即启动该采集任务，是否继续？`,
+    type: 'primary',
+    confirmText: '执行'
+  })
+
+  if (!ok) return
+
+  executingTaskIds.value = [...executingTaskIds.value, row.id]
+
+  try {
+    const result = await startExecutionByTasks({
+      taskIds: [row.id]
+    })
+
+    showExecutionSuccess(result)
+  } finally {
+    executingTaskIds.value = executingTaskIds.value.filter((id) => id !== row.id)
+  }
+}
+
+async function handleBatchExecute() {
+  if (!selectedTasks.value.length) {
+    message.warning('请先选择要执行的任务')
+    return
+  }
+
+  const ok = await confirm({
+    title: '确认批量执行任务',
+    content: `已选择 ${selectedTasks.value.length} 个任务，是否立即执行？`,
+    type: 'primary',
+    confirmText: '批量执行'
+  })
+
+  if (!ok) return
+
+  batchExecuting.value = true
+
+  try {
+    const result = await startExecutionByTasks({
+      taskIds: selectedTasks.value.map((item) => item.id)
+    })
+
+    showExecutionSuccess(result)
+  } finally {
+    batchExecuting.value = false
+  }
+}
+
+function handleBindGroups(row: TaskItem) {
+  currentTask.value = row
+  bindGroupsOpen.value = true
+}
+
+function handleGroupView(payload: { task: TaskItem; group: TaskAssociatedGroup }) {
+  message.info(`查看任务「${payload.task.taskName}」关联分组：${payload.group.groupName}`)
 }
 
 function handleReset() {
@@ -132,6 +216,7 @@ async function handleSubmitTask(
 
     formOpen.value = false
     detailOpen.value = false
+    bindGroupsOpen.value = false
     currentTask.value = null
 
     await loadTasks()
@@ -140,10 +225,21 @@ async function handleSubmitTask(
   }
 }
 
+async function handleBindGroupsSuccess() {
+  message.success('任务配置组绑定成功')
+
+  bindGroupsOpen.value = false
+  detailOpen.value = false
+  formOpen.value = false
+  currentTask.value = null
+
+  await loadTasks()
+}
+
 function handleFormOpenChange(value: boolean) {
   formOpen.value = value
 
-  if (!value && !detailOpen.value) {
+  if (!value && !detailOpen.value && !bindGroupsOpen.value) {
     currentTask.value = null
   }
 }
@@ -151,7 +247,15 @@ function handleFormOpenChange(value: boolean) {
 function handleDetailOpenChange(value: boolean) {
   detailOpen.value = value
 
-  if (!value && !formOpen.value) {
+  if (!value && !formOpen.value && !bindGroupsOpen.value) {
+    currentTask.value = null
+  }
+}
+
+function handleBindGroupsOpenChange(value: boolean) {
+  bindGroupsOpen.value = value
+
+  if (!value && !detailOpen.value && !formOpen.value) {
     currentTask.value = null
   }
 }
@@ -162,7 +266,17 @@ function handleDetailOpenChange(value: boolean) {
     <div class="page-toolbar">
       <div>
         <h2>任务管理</h2>
-        <p>管理数据采集任务、执行周期、启用状态和后续执行入口。</p>
+        <p>管理数据采集任务、执行周期、启用状态、关联分组和后续执行入口。</p>
+      </div>
+
+      <div class="page-toolbar__actions">
+        <DTButton
+          type="primary"
+          :loading="batchExecuting"
+          @click="handleBatchExecute"
+        >
+          批量执行
+        </DTButton>
       </div>
     </div>
 
@@ -189,7 +303,9 @@ function handleDetailOpenChange(value: boolean) {
         @toggle="handleToggle"
         @delete="handleDelete"
         @execute="handleExecute"
+        @bind-groups="handleBindGroups"
         @selection-change="handleSelectionChange"
+        @group-view="handleGroupView"
       />
     </DTCard>
 
@@ -207,6 +323,14 @@ function handleDetailOpenChange(value: boolean) {
       :loading="formLoading"
       @update:open="handleFormOpenChange"
       @submit="handleSubmitTask"
+    />
+
+    <TaskBindGroupsDrawer
+      :open="bindGroupsOpen"
+      :task="currentTask"
+      :loading="bindGroupsLoading"
+      @update:open="handleBindGroupsOpenChange"
+      @success="handleBindGroupsSuccess"
     />
   </div>
 </template>

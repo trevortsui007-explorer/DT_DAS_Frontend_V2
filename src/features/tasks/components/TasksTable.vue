@@ -4,12 +4,14 @@ import {
   DeleteOutlined,
   EditOutlined,
   EyeOutlined,
+  LinkOutlined,
   PlayCircleOutlined,
   StopOutlined
 } from '@ant-design/icons-vue'
 
 import {
   DTButton,
+  DTEmpty,
   DTTable,
   DTTag
 } from '@/shared/components'
@@ -19,10 +21,20 @@ import type {
   DTTableRow
 } from '@/shared/components'
 
-import type { TaskItem } from '@/api'
+import type {
+  TaskAssociatedGroup,
+  TaskItem
+} from '@/api'
 
-import { getTaskModeTagType, getTaskModeText } from '../utils/task-mode'
-import { formatCronText, formatDateTime } from '../utils/task-cron-format'
+import {
+  formatCronText,
+  formatDateTime
+} from '../utils/task-cron-format'
+
+import {
+  getTaskModeTagType,
+  getTaskModeText
+} from '../utils/task-mode'
 
 defineProps<{
   data: TaskItem[]
@@ -35,13 +47,28 @@ const emit = defineEmits<{
   toggle: [row: TaskItem]
   delete: [row: TaskItem]
   execute: [row: TaskItem]
+  bindGroups: [row: TaskItem]
   selectionChange: [rows: TaskItem[]]
+  groupView: [payload: { task: TaskItem; group: TaskAssociatedGroup }]
 }>()
+
+type AssociatedGroupRow = TaskAssociatedGroup & {
+  rowId: string
+  index: number
+  task: TaskItem
+}
 
 const columns: DTTableColumn[] = [
   {
     key: 'selection',
     type: 'selection',
+    width: 52,
+    align: 'center',
+    fixed: 'left'
+  },
+  {
+    key: 'expand',
+    type: 'expand',
     width: 52,
     align: 'center',
     fixed: 'left'
@@ -61,10 +88,16 @@ const columns: DTTableColumn[] = [
     sortable: true
   },
   {
+    key: 'groupCount',
+    title: '关联组',
+    width: 100,
+    align: 'center',
+    sortable: true
+  },
+  {
     key: 'cronExpression',
     title: 'Cron 表达式',
-    minWidth: 180,
-    align: 'center',
+    minWidth: 260,
     showOverflowTooltip: true
   },
   {
@@ -77,15 +110,61 @@ const columns: DTTableColumn[] = [
   {
     key: 'updateTime',
     title: '更新时间',
-    minWidth: 220,
+    width: 160,
     showOverflowTooltip: true
   },
   {
     key: 'actions',
     title: '操作',
-    width: 220,
+    width: 260,
     align: 'center',
     fixed: 'right'
+  }
+]
+
+const associatedGroupColumns: DTTableColumn[] = [
+  {
+    key: 'index',
+    title: '序号',
+    width: 80,
+    align: 'center'
+  },
+  {
+    key: 'groupName',
+    title: '分组名称',
+    minWidth: 220,
+    showOverflowTooltip: true
+  },
+  {
+    key: 'groupCategory',
+    title: '分组类别',
+    width: 140,
+    align: 'center',
+    showOverflowTooltip: true
+  },
+  {
+    key: 'groupType',
+    title: '分组类型',
+    minWidth: 180,
+    showOverflowTooltip: true
+  },
+  {
+    key: 'configCount',
+    title: '配置数',
+    width: 100,
+    align: 'center'
+  },
+  {
+    key: 'isEnabled',
+    title: '状态',
+    width: 100,
+    align: 'center'
+  },
+  {
+    key: 'actions',
+    title: '操作',
+    width: 100,
+    align: 'center'
   }
 ]
 
@@ -93,16 +172,34 @@ function getEnabled(row: TaskItem) {
   return Number(row.isEnabled) === 1
 }
 
+function getGroupEnabled(row: TaskAssociatedGroup) {
+  return Number(row.isEnabled) === 1
+}
+
+function getAssociatedGroupRows(row: TaskItem): AssociatedGroupRow[] {
+  return row.associatedGroups.map((group, index) => {
+    return {
+      ...group,
+      rowId: `${row.id}-${group.id}-${index}`,
+      index: index + 1,
+      task: row
+    }
+  })
+}
+
 function handleAction(
-  type: 'view' | 'edit' | 'toggle' | 'delete' | 'execute',
+  type: 'view' | 'edit' | 'toggle' | 'delete' | 'execute' | 'bindGroups',
   row: DTTableRow
 ) {
+  const task = row as TaskItem
+
   const actions = {
-    view: () => emit('view', row as TaskItem),
-    edit: () => emit('edit', row as TaskItem),
-    toggle: () => emit('toggle', row as TaskItem),
-    delete: () => emit('delete', row as TaskItem),
-    execute: () => emit('execute', row as TaskItem)
+    view: () => emit('view', task),
+    edit: () => emit('edit', task),
+    toggle: () => emit('toggle', task),
+    delete: () => emit('delete', task),
+    execute: () => emit('execute', task),
+    bindGroups: () => emit('bindGroups', task)
   }
 
   actions[type]()
@@ -110,6 +207,19 @@ function handleAction(
 
 function handleSelectionChange(rows: DTTableRow[]) {
   emit('selectionChange', rows as TaskItem[])
+}
+
+function handleGroupAction(type: 'view', row: DTTableRow) {
+  const groupRow = row as AssociatedGroupRow
+
+  const actions = {
+    view: () => emit('groupView', {
+      task: groupRow.task,
+      group: groupRow
+    })
+  }
+
+  actions[type]()
 }
 </script>
 
@@ -119,13 +229,19 @@ function handleSelectionChange(rows: DTTableRow[]) {
     :data="data as DTTableRow[]"
     row-key="id"
     :loading="loading"
-    height="520px"
+    height="560px"
     border
     @selection-change="handleSelectionChange"
   >
     <template #cell-taskMode="{ value }">
       <DTTag :type="getTaskModeTagType(value)">
         {{ getTaskModeText(value) }}
+      </DTTag>
+    </template>
+
+    <template #cell-groupCount="{ value }">
+      <DTTag :type="Number(value) > 0 ? 'primary' : 'info'">
+        {{ value || 0 }}
       </DTTag>
     </template>
 
@@ -136,14 +252,14 @@ function handleSelectionChange(rows: DTTableRow[]) {
       </div>
     </template>
 
-    <template #cell-updateTime="{ value }">
-      {{ formatDateTime(String(value || '')) }}
-    </template>
-
     <template #cell-isEnabled="{ row }">
       <DTTag :type="getEnabled(row as TaskItem) ? 'success' : 'info'">
         {{ getEnabled(row as TaskItem) ? '启用' : '禁用' }}
       </DTTag>
+    </template>
+
+    <template #cell-updateTime="{ value }">
+      {{ formatDateTime(String(value || '')) }}
     </template>
 
     <template #cell-actions="{ row }">
@@ -154,6 +270,15 @@ function handleSelectionChange(rows: DTTableRow[]) {
           @click.stop="handleAction('view', row)"
         >
           <EyeOutlined />
+        </DTButton>
+
+        <DTButton
+          size="sm"
+          type="success"
+          title="绑定分组"
+          @click.stop="handleAction('bindGroups', row)"
+        >
+          <LinkOutlined />
         </DTButton>
 
         <DTButton
@@ -194,6 +319,56 @@ function handleSelectionChange(rows: DTTableRow[]) {
         </DTButton>
       </div>
     </template>
+
+    <template #expand="{ row }">
+      <div class="task-expand">
+        <DTTable
+          v-if="(row as TaskItem).associatedGroups.length"
+          :columns="associatedGroupColumns"
+          :data="getAssociatedGroupRows(row as TaskItem) as DTTableRow[]"
+          row-key="rowId"
+          empty-text="暂无关联分组"
+          border
+        >
+          <template #cell-groupCategory="{ value }">
+            <DTTag type="info">
+              {{ value || '未分类' }}
+            </DTTag>
+          </template>
+
+          <template #cell-configCount="{ value }">
+            <DTTag type="primary">
+              {{ value || 0 }}
+            </DTTag>
+          </template>
+
+          <template #cell-isEnabled="{ row: groupRow }">
+            <DTTag :type="getGroupEnabled(groupRow as TaskAssociatedGroup) ? 'success' : 'info'">
+              {{ getGroupEnabled(groupRow as TaskAssociatedGroup) ? '启用' : '禁用' }}
+            </DTTag>
+          </template>
+
+          <template #cell-actions="{ row: groupRow }">
+            <div class="table-actions table-actions--child">
+              <DTButton
+                size="sm"
+                title="查看分组"
+                @click.stop="handleGroupAction('view', groupRow)"
+              >
+                <EyeOutlined />
+              </DTButton>
+            </div>
+          </template>
+        </DTTable>
+
+        <DTEmpty
+          v-else
+          size="sm"
+          title="暂无关联分组"
+          description="当前任务还没有绑定任何配置分组。"
+        />
+      </div>
+    </template>
   </DTTable>
 </template>
 
@@ -217,6 +392,10 @@ function handleSelectionChange(rows: DTTableRow[]) {
   font-size: 14px;
 }
 
+.table-actions--child :deep(.dt-button) {
+  width: 30px;
+}
+
 .cron-cell {
   display: flex;
   min-width: 0;
@@ -224,7 +403,7 @@ function handleSelectionChange(rows: DTTableRow[]) {
   gap: 2px;
 }
 
-.cron-cell__text {
+.cron-cell__raw {
   color: var(--dt-text-primary);
   font-family:
     Consolas,
@@ -235,8 +414,14 @@ function handleSelectionChange(rows: DTTableRow[]) {
   font-weight: 600;
 }
 
-.cron-cell__raw {
+.cron-cell__text {
   color: var(--dt-text-muted);
   font-size: 12px;
+}
+
+.task-expand {
+  padding: var(--dt-space-3);
+  border-radius: var(--dt-radius-lg);
+  background: color-mix(in srgb, var(--dt-bg-muted) 42%, transparent);
 }
 </style>
