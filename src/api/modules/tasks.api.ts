@@ -11,15 +11,23 @@ import type {
 } from '@/api/types/task.types'
 
 export function fetchTasks() {
-  return request.get<TaskItem[]>('/api/data-acquisition/tasks')
+  return request.get<TaskItem[]>('/api/data-acquisition/tasks', {
+    mockValidate: Array.isArray
+  })
 }
 
 export function fetchTasksByMode(mode: TaskMode) {
-  return request.get<TaskItem[]>(`/api/data-acquisition/tasks/mode/${mode}`)
+  return request.get<TaskItem[]>(`/api/data-acquisition/tasks/mode/${mode}`, {
+    mockValidate: Array.isArray
+  })
 }
 
 export function fetchTaskById(id: number | string) {
-  return request.get<TaskDetail>(`/api/data-acquisition/tasks/${id}`)
+  return request.get<TaskDetail>(`/api/data-acquisition/tasks/${id}`, {
+    mockValidate: (data) => {
+      return Boolean(data && typeof data === 'object' && 'id' in data)
+    }
+  })
 }
 
 export function createTask(data: CreateTaskPayload) {

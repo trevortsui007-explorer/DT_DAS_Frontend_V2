@@ -15,6 +15,7 @@ import {
 
 import { DTButton, DTCard, DTTag } from '@/shared/components'
 import { confirm, message } from '@/shared/composables'
+import { deferInitialLoad } from '@/shared/utils/defer'
 
 import {
   GroupBindConfigsDrawer,
@@ -57,7 +58,7 @@ const selectedNames = computed(() => {
 })
 
 onMounted(() => {
-  handleLoadGroups()
+  deferInitialLoad(handleLoadGroups)
 })
 
 function handleBind(row: ConfigGroupItem) {

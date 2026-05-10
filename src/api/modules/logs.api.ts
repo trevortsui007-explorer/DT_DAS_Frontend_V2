@@ -36,10 +36,21 @@ export function fetchTaskLogs(params: TaskLogQuery = {}) {
       taskId: params.taskId || undefined,
       startTime: params.startTime || undefined,
       endTime: params.endTime || undefined
+    },
+    mockValidate: (data) => {
+      return Boolean(
+        data &&
+        typeof data === 'object' &&
+        Array.isArray((data as PageResult<TaskLogItem>).items)
+      )
     }
   })
 }
 
 export function fetchTaskLogDetail(id: number | string) {
-  return request.get<TaskLogDetail>(`/api/data-acquisition/execution/task-logs/${id}`)
+  return request.get<TaskLogDetail>(`/api/data-acquisition/execution/task-logs/${id}`, {
+    mockValidate: (data) => {
+      return Boolean(data && typeof data === 'object' && ('taskLogId' in data || 'id' in data))
+    }
+  })
 }

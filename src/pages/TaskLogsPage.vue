@@ -6,6 +6,7 @@ import { TaskLogsTable, TaskLogsToolbar, useTaskLogsList } from '@/features/logs
 import { DTCard, DTDrawer, DTPagination, DTTable, DTTag } from '@/shared/components'
 import type { DTTableColumn, DTTableRow } from '@/shared/components'
 import { message } from '@/shared/composables'
+import { deferInitialLoad } from '@/shared/utils/defer'
 
 const {
   loading,
@@ -86,7 +87,7 @@ function getDetailRows() {
 }
 
 onMounted(() => {
-  loadTaskLogs()
+  deferInitialLoad(loadTaskLogs)
 })
 </script>
 

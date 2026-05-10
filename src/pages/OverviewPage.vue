@@ -4,6 +4,7 @@ import { computed, onMounted } from 'vue'
 import { useDashboardOverview } from '@/features/dashboard'
 import { DTButton, DTCard, DTEmpty, DTLoading, DTTag } from '@/shared/components'
 import { message } from '@/shared/composables'
+import { deferInitialLoad } from '@/shared/utils/defer'
 
 const {
   loading,
@@ -59,7 +60,7 @@ async function handleRefresh() {
 }
 
 onMounted(() => {
-  loadOverview()
+  deferInitialLoad(loadOverview)
 })
 </script>
 

@@ -19,11 +19,17 @@ function buildIdsQuery(ids: Array<number | string>) {
 }
 
 export function fetchGroups() {
-  return request.get<ConfigGroupItem[]>('/api/file-configs/group')
+  return request.get<ConfigGroupItem[]>('/api/file-configs/group', {
+    mockValidate: Array.isArray
+  })
 }
 
 export function fetchGroupById(id: number | string) {
-  return request.get<ConfigGroupDetail>(`/api/file-configs/group/${id}`)
+  return request.get<ConfigGroupDetail>(`/api/file-configs/group/${id}`, {
+    mockValidate: (data) => {
+      return Boolean(data && typeof data === 'object' && 'id' in data)
+    }
+  })
 }
 
 export function createGroup(data: CreateGroupPayload) {

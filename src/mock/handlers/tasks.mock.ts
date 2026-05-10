@@ -23,6 +23,12 @@ export function mockTasks(config: AxiosRequestConfig) {
   }
 
   if (method === 'get') {
+    const modeMatched = url.match(/\/api\/data-acquisition\/tasks\/mode\/([^/?]+)/)
+
+    if (modeMatched) {
+      return mockTasksData.filter((item) => Number(item.taskMode) === Number(modeMatched[1]))
+    }
+
     const id = getIdFromUrl(url)
 
     if (id) {

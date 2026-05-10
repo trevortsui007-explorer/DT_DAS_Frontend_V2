@@ -122,14 +122,19 @@ export async function fetchConfigs() {
   const result = await request.get<RawFileConfigItem[]>('/api/file-configs', {
     params: {
       all: true
-    }
+    },
+    mockValidate: Array.isArray
   })
 
   return result.map(normalizeConfigItem)
 }
 
 export async function fetchConfigById(id: number | string) {
-  const result = await request.get<RawFileConfigItem>(`/api/file-configs/${id}`)
+  const result = await request.get<RawFileConfigItem>(`/api/file-configs/${id}`, {
+    mockValidate: (data) => {
+      return Boolean(data && typeof data === 'object' && 'id' in data)
+    }
+  })
 
   return normalizeConfigDetail(result)
 }
