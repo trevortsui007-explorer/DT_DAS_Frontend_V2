@@ -1,6 +1,228 @@
+import type { FileConfigItem } from '@/api/types/config.types'
+import type { ConfigGroupItem } from '@/api/types/group.types'
 import type { OverviewActivityItem, OverviewTrendItem } from '@/api/types/dashboard.types'
 import type { AcquisitionLogItem, TaskLogItem } from '@/api/types/log.types'
 import type { TaskItem } from '@/api/types/task.types'
+
+export type MockFileConfigItem = Omit<FileConfigItem, 'fieldMappings'> & {
+  eqName?: string
+  tableName?: string
+  filePathPattern?: string
+  fileNamePattern?: string
+  fileType?: string
+  headerRow?: number
+  startRow?: number
+  fieldMappings?: Record<string, string>
+  extFields?: Record<string, unknown> | null
+  postProcessingType?: number
+  postTableName?: string
+  procedureName?: string
+  serviceName?: string
+  flag?: string
+  flagName?: string
+}
+
+export type MockConfigGroupItem = ConfigGroupItem & {
+  configIds?: number[]
+}
+
+const masonCnMappings = '{"PCB号":"pcbNo","二维码":"qrCode","料号":"prodno","日期":"date","Lot":"lotno","周期":"cycle","测试结果":"testResult","导通参数":"continuityParam","绝缘参数":"insulationParam","总点数":"totalPoints","网表结构":"netlistStructure","测试步骤":"testStep","坏点信息":"badPointInfo"}'
+const masonEnMappings = '{"PCB No.":"pcbNo","Barcode":"qrCode","Lot No.":"prodno","Date":"date","Lot":"lotno","Cycle":"cycle","Test Result":"testResult","Con Param":"continuityParam","ISO Param":"insulationParam","Total Point":"totalPoints","Table Struct":"netlistStructure","Test Step":"testStep","Bad Info":"badPointInfo"}'
+const envMappings = '{"环境温度":"Temperature","环境湿度":"Humidity"}'
+const testMappings = '{"a":"a","b":"b","c":"c","d":"d","e":"e","f":"f","{row}":"row","{fullFilePath}":"fullFilePath","{createdt}":"createdt"}'
+
+function parseMapping(value?: string) {
+  if (!value) return {}
+
+  try {
+    const parsed = JSON.parse(value)
+
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? parsed as Record<string, string>
+      : {}
+  } catch {
+    return {}
+  }
+}
+
+function parseExtFields(value?: string | null) {
+  if (!value) return null
+
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .reduce<Record<string, true>>((acc, item) => {
+      acc[item] = true
+      return acc
+    }, {})
+}
+
+function createConfig(data: {
+  id: number
+  eqName: string
+  tableName: string
+  filePathPattern: string
+  fileNamePattern?: string
+  fileType: string
+  headerRow: number
+  startRow: number
+  fieldMappings?: string
+  extFields?: string | null
+  isEnabled: boolean | number
+  postProcessingType: number
+  postTableName?: string | null
+  procedureName?: string | null
+  serviceName?: string | null
+  flag?: string | null
+  flagName?: string | null
+  createTime: string
+}): MockFileConfigItem {
+  return {
+    id: data.id,
+    name: data.eqName,
+    sourcePath: data.filePathPattern,
+    targetTable: data.tableName,
+    isEnabled: Boolean(data.isEnabled),
+    description: data.flagName || data.flag || '',
+    createTime: data.createTime,
+    updateTime: data.createTime,
+    fileNamePattern: data.fileNamePattern || '',
+    startRow: data.startRow,
+    eqName: data.eqName,
+    tableName: data.tableName,
+    filePathPattern: data.filePathPattern,
+    fileType: data.fileType,
+    headerRow: data.headerRow,
+    fieldMappings: parseMapping(data.fieldMappings),
+    extFields: parseExtFields(data.extFields),
+    postProcessingType: data.postProcessingType,
+    postTableName: data.postTableName ?? undefined,
+    procedureName: data.procedureName ?? undefined,
+    serviceName: data.serviceName ?? undefined,
+    flag: data.flag ?? undefined,
+    flagName: data.flagName ?? undefined
+  }
+}
+
+export const mockConfigsData: MockFileConfigItem[] = [
+  createConfig({ id: 1, eqName: 'DG-ET-001', tableName: 'MasonElectricMeasurementLogFiles', filePathPattern: 'ftp://10.6.9.22/A1/{yyyy}-{M}/', fileNamePattern: 'record-{yyyy}-{M}-{d}', fileType: '.csv', headerRow: 1, startRow: 2, fieldMappings: masonCnMappings, extFields: null, isEnabled: 1, postProcessingType: 1, postTableName: null, procedureName: 'pr_process_bad_point_information', serviceName: null, flag: 'ProcessFailurePointInfo', flagName: '处理坏点信息', createTime: '2026-03-02 10:05:55' }),
+  createConfig({ id: 2, eqName: 'DG-ET-002', tableName: 'MasonElectricMeasurementLogFiles', filePathPattern: 'ftp://10.6.9.22/A2/{yyyy}-{M}/', fileNamePattern: 'record-{yyyy}-{M}-{d}', fileType: '.csv', headerRow: 1, startRow: 2, fieldMappings: masonCnMappings, extFields: null, isEnabled: 1, postProcessingType: 1, postTableName: null, procedureName: 'pr_process_bad_point_information', serviceName: null, flag: 'ProcessFailurePointInfo', flagName: '处理坏点信息', createTime: '2026-03-02 10:05:55' }),
+  createConfig({ id: 3, eqName: 'DG-ET-004', tableName: 'MasonElectricMeasurementLogFiles', filePathPattern: 'ftp://10.6.9.22/A3/CSV/{yyyy}-{M}/', fileNamePattern: 'record-{yyyy}.{M}.{d}', fileType: '.csv', headerRow: 1, startRow: 2, fieldMappings: masonEnMappings, extFields: null, isEnabled: 1, postProcessingType: 1, postTableName: null, procedureName: 'pr_process_bad_point_information', serviceName: null, flag: 'ProcessFailurePointInfo', flagName: '处理坏点信息', createTime: '2026-03-02 10:05:55' }),
+  createConfig({ id: 4, eqName: 'DG-ET-025', tableName: 'MasonElectricMeasurementLogFiles', filePathPattern: 'ftp://10.6.9.22/B11/{yyyy}-{M}/', fileNamePattern: 'record-{yyyy}-{M}-{d}', fileType: '.csv', headerRow: 1, startRow: 2, fieldMappings: masonCnMappings, extFields: null, isEnabled: 1, postProcessingType: 1, postTableName: null, procedureName: 'pr_process_bad_point_information', serviceName: null, flag: 'ProcessFailurePointInfo', flagName: '处理坏点信息', createTime: '2026-03-02 11:09:18' }),
+  createConfig({ id: 5, eqName: 'DG-ET-026', tableName: 'MasonElectricMeasurementLogFiles', filePathPattern: 'ftp://10.6.9.22/B12/{yyyy}-{M}/', fileNamePattern: 'record-{yyyy}-{M}-{d}', fileType: '.csv', headerRow: 1, startRow: 2, fieldMappings: masonCnMappings, extFields: null, isEnabled: 1, postProcessingType: 1, postTableName: null, procedureName: 'pr_process_bad_point_information', serviceName: null, flag: 'ProcessFailurePointInfo', flagName: '处理坏点信息', createTime: '2026-03-02 11:09:18' }),
+  createConfig({ id: 6, eqName: 'DG-ET-027', tableName: 'MasonElectricMeasurementLogFiles', filePathPattern: 'ftp://10.6.9.22/B13/{yyyy}-{M}/', fileNamePattern: 'record-{yyyy}-{M}-{d}', fileType: '.csv', headerRow: 1, startRow: 2, fieldMappings: masonCnMappings, extFields: null, isEnabled: 1, postProcessingType: 1, postTableName: null, procedureName: 'pr_process_bad_point_information', serviceName: null, flag: 'ProcessFailurePointInfo', flagName: '处理坏点信息', createTime: '2026-03-02 11:09:18' }),
+  createConfig({ id: 7, eqName: 'DG-ET-028', tableName: 'MasonElectricMeasurementLogFiles', filePathPattern: 'ftp://10.6.9.22/B14/{yyyy}-{M}/', fileNamePattern: 'record-{yyyy}.{M}.{d}', fileType: '.csv', headerRow: 1, startRow: 2, fieldMappings: masonEnMappings, extFields: null, isEnabled: 1, postProcessingType: 1, postTableName: null, procedureName: 'pr_process_bad_point_information', serviceName: null, flag: 'ProcessFailurePointInfo', flagName: '处理坏点信息', createTime: '2026-03-02 11:09:18' }),
+  createConfig({ id: 8, eqName: 'REST_Test_Device', tableName: 'Target_Data_Table', filePathPattern: 'D:/Data/{yyyy}/', fileNamePattern: 'Log.csv', fileType: 'csv', headerRow: 1, startRow: 2, fieldMappings: '[]', extFields: null, isEnabled: 1, postProcessingType: 2, postTableName: null, procedureName: '', serviceName: 'ProcessETFailureInformation', flag: null, flagName: null, createTime: '2026-03-03 11:58:07' }),
+  createConfig({ id: 9, eqName: 'REST_Test_Device_2', tableName: 'Target_Data_Table', filePathPattern: 'D:/Data/{yyyy}/', fileNamePattern: 'Log.csv', fileType: 'csv', headerRow: 1, startRow: 2, fieldMappings: '[]', extFields: null, isEnabled: 1, postProcessingType: 2, postTableName: null, procedureName: '', serviceName: 'ProcessETFailureInformation', flag: null, flagName: null, createTime: '2026-03-09 10:46:57' }),
+  createConfig({ id: 11, eqName: 'Test_Device_3', tableName: 'Target_Data_Table', filePathPattern: 'D:/Desktop/{yyyy}.{MM}.{dd}/', fileNamePattern: '{yyyy}-{MM}-{dd}.csv', fileType: 'csv', headerRow: 1, startRow: 2, fieldMappings: envMappings, extFields: 'row, fullFilePath', isEnabled: 1, postProcessingType: 0, postTableName: null, procedureName: null, serviceName: 'DataAcquisitionService', flag: 'Manual_Test_001', flagName: '手动补录测试', createTime: '2026-03-13 16:52:58' }),
+  createConfig({ id: 12, eqName: 'Test_Device_4', tableName: 'Target_Data_Table', filePathPattern: 'D:/Desktop/{yyyy}.{MM}.{dd}/', fileNamePattern: '{yyyy}-{MM}-{dd}.xlsx', fileType: 'xlsx', headerRow: 1, startRow: 2, fieldMappings: envMappings, extFields: null, isEnabled: 1, postProcessingType: 0, postTableName: null, procedureName: null, serviceName: 'DataAcquisitionService', flag: 'Manual_Test_001', flagName: '手动补录测试', createTime: '2026-03-16 10:25:47' }),
+  createConfig({ id: 13, eqName: 'REST_Test_Device_5', tableName: 'Target_Data_Table', filePathPattern: 'D:/Desktop/{yyyy}.{MM}.{dd}/', fileNamePattern: '', fileType: 'csv', headerRow: 1, startRow: 2, fieldMappings: envMappings, extFields: null, isEnabled: 1, postProcessingType: 0, postTableName: null, procedureName: '', serviceName: null, flag: null, flagName: null, createTime: '2026-03-18 17:16:29' }),
+  createConfig({ id: 14, eqName: 'DG-ET-017', tableName: 'MasonElectricMeasurementLogFiles_BAK', filePathPattern: 'D:/Desktop/{yyyy}-{M}/', fileNamePattern: 'record-{yyyy}-{M}-{d}.csv', fileType: '.csv', headerRow: 1, startRow: 2, fieldMappings: masonCnMappings, extFields: 'row,fullFilePath,IsProcessed', isEnabled: 1, postProcessingType: 2, postTableName: 'MasonETFailureInformation_BAK', procedureName: null, serviceName: 'MasonETFailureService', flag: 'ProcessFailurePointInfo', flagName: '处理坏点信息', createTime: '2026-03-19 11:08:47' }),
+  createConfig({ id: 15, eqName: 'test', tableName: 'test', filePathPattern: 'test', fileNamePattern: 'x.xlsx', fileType: '.xlsx', headerRow: 1, startRow: 2, fieldMappings: testMappings, extFields: null, isEnabled: 1, postProcessingType: 1, postTableName: null, procedureName: 'test', serviceName: 'test', flag: '', flagName: '', createTime: '2026-04-16 11:59:22' }),
+  createConfig({ id: 17, eqName: 'test1', tableName: 'test', filePathPattern: 'test', fileNamePattern: 'x.xlsx', fileType: '.xlsx', headerRow: 1, startRow: 2, fieldMappings: testMappings, extFields: null, isEnabled: 1, postProcessingType: 1, postTableName: null, procedureName: 'test', serviceName: 'test', flag: '', flagName: '', createTime: '2026-04-16 13:36:38' }),
+  createConfig({ id: 18, eqName: 'test2', tableName: 'test', filePathPattern: 'test', fileNamePattern: '', fileType: 'csv', headerRow: 1, startRow: 2, fieldMappings: '', extFields: null, isEnabled: 1, postProcessingType: 0, postTableName: null, procedureName: '', serviceName: '', flag: '', flagName: '', createTime: '2026-04-16 15:09:41' }),
+  createConfig({ id: 19, eqName: 'test3', tableName: 'test', filePathPattern: 'test', fileNamePattern: '', fileType: 'csv', headerRow: 1, startRow: 2, fieldMappings: '', extFields: null, isEnabled: 1, postProcessingType: 0, postTableName: null, procedureName: '', serviceName: '', flag: '', flagName: '', createTime: '2026-04-16 15:10:03' }),
+  createConfig({ id: 20, eqName: 'test4', tableName: 'test', filePathPattern: 'test', fileNamePattern: '', fileType: 'csv', headerRow: 1, startRow: 2, fieldMappings: '', extFields: null, isEnabled: 1, postProcessingType: 0, postTableName: null, procedureName: '', serviceName: '', flag: '', flagName: '', createTime: '2026-04-16 15:12:51' }),
+  createConfig({ id: 21, eqName: 'test6', tableName: 'test', filePathPattern: 'test', fileNamePattern: '', fileType: 'csv', headerRow: 1, startRow: 2, fieldMappings: '', extFields: null, isEnabled: 1, postProcessingType: 0, postTableName: null, procedureName: '', serviceName: '', flag: '', flagName: '', createTime: '2026-04-16 17:44:59' }),
+  createConfig({ id: 22, eqName: 'Mason_Test', tableName: 'MasonElectricMeasurementLogFiles_BAK', filePathPattern: 'D://Desktop/B14/{yyyy}-{M}/', fileNamePattern: 'record-{yyyy}.{M}.{d}.csv', fileType: '.csv', headerRow: 1, startRow: 2, fieldMappings: masonEnMappings, extFields: null, isEnabled: 1, postProcessingType: 2, postTableName: 'MasonETFailureInformation_BAK', procedureName: 'MasonETFailureService', serviceName: 'MasonETFailureService', flag: '', flagName: '', createTime: '2026-04-22 17:30:26' }),
+  createConfig({ id: 24, eqName: 'REST_Test_Device_6', tableName: 'Target_Data_Table', filePathPattern: 'D:/Desktop/{yyyy}.{MM}.{dd}/', fileNamePattern: '', fileType: 'csv', headerRow: 1, startRow: 2, fieldMappings: envMappings, extFields: null, isEnabled: 1, postProcessingType: 0, postTableName: null, procedureName: '', serviceName: null, flag: null, flagName: null, createTime: '2026-04-23 10:43:18' }),
+  createConfig({ id: 25, eqName: 'Test_New_Version', tableName: 'TestTable', filePathPattern: 'D:\\Code\\DT_DAS_Frontend_V2\\src\\features\\configs\\components', fileNamePattern: 'pattern.csv', fileType: 'xlsx', headerRow: 1, startRow: 2, fieldMappings: '{"文件路径":"filePath"}', extFields: null, isEnabled: 0, postProcessingType: 2, postTableName: 'PostTable', procedureName: '', serviceName: 'PostService', flag: '', flagName: '', createTime: '2026-05-05 15:26:21' })
+]
+
+export const mockGroupConfigData = [
+  { id: 1, groupId: 1, configId: 1, isEnabled: true },
+  { id: 2, groupId: 1, configId: 2, isEnabled: true },
+  { id: 3, groupId: 1, configId: 3, isEnabled: true },
+  { id: 4, groupId: 2, configId: 4, isEnabled: true },
+  { id: 5, groupId: 2, configId: 5, isEnabled: true },
+  { id: 6, groupId: 2, configId: 6, isEnabled: true },
+  { id: 7, groupId: 2, configId: 7, isEnabled: true },
+  { id: 80, groupId: 3, configId: 18, isEnabled: true },
+  { id: 81, groupId: 3, configId: 19, isEnabled: true },
+  { id: 82, groupId: 3, configId: 20, isEnabled: true },
+  { id: 83, groupId: 3, configId: 21, isEnabled: true },
+  { id: 84, groupId: 3, configId: 15, isEnabled: true },
+  { id: 85, groupId: 3, configId: 17, isEnabled: true },
+  { id: 86, groupId: 3, configId: 18, isEnabled: true },
+  { id: 87, groupId: 3, configId: 19, isEnabled: true },
+  { id: 88, groupId: 3, configId: 20, isEnabled: true },
+  { id: 89, groupId: 3, configId: 21, isEnabled: true },
+  { id: 90, groupId: 3, configId: 15, isEnabled: true },
+  { id: 91, groupId: 3, configId: 17, isEnabled: true },
+  { id: 92, groupId: 3, configId: 15, isEnabled: true },
+  { id: 93, groupId: 3, configId: 17, isEnabled: true },
+  { id: 94, groupId: 3, configId: 11, isEnabled: true },
+  { id: 95, groupId: 3, configId: 8, isEnabled: true },
+  { id: 96, groupId: 3, configId: 9, isEnabled: true },
+  { id: 97, groupId: 3, configId: 11, isEnabled: true },
+  { id: 98, groupId: 4, configId: 17, isEnabled: true },
+  { id: 99, groupId: 4, configId: 18, isEnabled: true },
+  { id: 100, groupId: 4, configId: 19, isEnabled: true },
+  { id: 101, groupId: 4, configId: 20, isEnabled: true },
+  { id: 102, groupId: 4, configId: 21, isEnabled: true }
+]
+
+function getConfigIds(groupId: number) {
+  return mockGroupConfigData
+    .filter((item) => item.groupId === groupId && item.isEnabled)
+    .map((item) => item.configId)
+}
+
+function getAssociatedConfigs(groupId: number) {
+  return getConfigIds(groupId).map((configId) => {
+    const config = mockConfigsData.find((item) => item.id === configId)
+
+    return {
+      id: String(configId),
+      eqName: config?.eqName || config?.name || `配置 ${configId}`,
+      isEnabled: config?.isEnabled ? 1 as const : 0 as const
+    }
+  })
+}
+
+export const mockGroupsData: MockConfigGroupItem[] = [
+  {
+    id: '1',
+    groupName: '电测自动配置组',
+    groupCategory: '麦逊',
+    groupType: '默认执行组',
+    isEnabled: 1,
+    configCount: getConfigIds(1).length,
+    associatedConfigs: getAssociatedConfigs(1),
+    configIds: getConfigIds(1)
+  },
+  {
+    id: '2',
+    groupName: '麦逊电测配置组_第二组',
+    groupCategory: '麦逊',
+    groupType: '默认执行组',
+    isEnabled: 1,
+    configCount: getConfigIds(2).length,
+    associatedConfigs: getAssociatedConfigs(2),
+    configIds: getConfigIds(2)
+  },
+  {
+    id: '3',
+    groupName: '组测试',
+    groupCategory: '二厂',
+    groupType: '默认周期执行组',
+    isEnabled: 1,
+    configCount: getConfigIds(3).length,
+    associatedConfigs: getAssociatedConfigs(3),
+    configIds: getConfigIds(3)
+  },
+  {
+    id: '4',
+    groupName: '测试分组',
+    groupCategory: '二厂',
+    groupType: '默认周期执行组',
+    isEnabled: 0,
+    configCount: getConfigIds(4).length,
+    associatedConfigs: getAssociatedConfigs(4),
+    configIds: getConfigIds(4)
+  }
+]
 
 export const mockTasksData: TaskItem[] = [
   {
