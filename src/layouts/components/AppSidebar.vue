@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import {
+  AppstoreOutlined,
+  ClusterOutlined,
+  DashboardOutlined,
+  ExperimentOutlined,
+  FileSearchOutlined,
+  ScheduleOutlined
+} from '@ant-design/icons-vue'
 
 import { useAppStore } from '@/app/stores/app.store'
 
@@ -8,12 +16,12 @@ const route = useRoute()
 const appStore = useAppStore()
 
 const menus = [
-  { title: '总览', path: '/overview', icon: 'OV' },
-  { title: '配置管理', path: '/configs', icon: 'CF' },
-  { title: '分组管理', path: '/groups', icon: 'GP' },
-  { title: '任务管理', path: '/tasks', icon: 'TK' },
-  { title: '执行日志', path: '/task-logs', icon: 'LG' },
-  { title: '组件示例', path: '/playground', icon: 'UI' },
+  { title: '总览', path: '/overview', icon: DashboardOutlined },
+  { title: '配置管理', path: '/configs', icon: AppstoreOutlined },
+  { title: '分组管理', path: '/groups', icon: ClusterOutlined },
+  { title: '任务管理', path: '/tasks', icon: ScheduleOutlined },
+  { title: '执行日志', path: '/task-logs', icon: FileSearchOutlined },
+  { title: '组件示例', path: '/playground', icon: ExperimentOutlined },
 ]
 
 const activePath = computed(() => route.path)
@@ -38,7 +46,9 @@ const isDarkMode = computed(() => appStore.theme === 'dark')
         class="app-sidebar__link"
         :class="{ 'is-active': activePath === item.path }"
       >
-        <span class="app-sidebar__icon">{{ item.icon }}</span>
+        <span class="app-sidebar__icon">
+          <component :is="item.icon" />
+        </span>
         <span>{{ item.title }}</span>
       </RouterLink>
     </nav>
