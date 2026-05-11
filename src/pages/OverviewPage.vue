@@ -2,7 +2,21 @@
 import { computed, onMounted } from 'vue'
 
 import { useDashboardOverview } from '@/features/dashboard'
-import { DTButton, DTCard, DTEmpty, DTLoading, DTTag } from '@/shared/components'
+import {
+  DTButton,
+  DTCard,
+  DTEmpty,
+  DTFlowTimeline,
+  DTLineChart,
+  DTLoading,
+  DTPieChart,
+  DTTag
+} from '@/shared/components'
+import type {
+  DTFlowTimelineItem,
+  DTLineChartPoint,
+  DTPieChartSegment
+} from '@/shared/components'
 import { message } from '@/shared/composables'
 import { deferInitialLoad } from '@/shared/utils/defer'
 
@@ -14,13 +28,6 @@ const {
   stats,
   loadOverview
 } = useDashboardOverview()
-
-const maxTrendValue = computed(() => {
-  return Math.max(
-    1,
-    ...trend.value.map((item) => item.successCount + item.failureCount + (item.runningCount || 0))
-  )
-})
 
 const systemHealth = computed(() => {
   if (stats.value.runningCount > 0) return { type: 'primary' as const, text: '采集中', desc: '存在正在执行的采集任务' }
@@ -61,6 +68,42 @@ async function handleRefresh() {
 
 onMounted(() => {
   deferInitialLoad(loadOverview)
+})
+
+const trendLineData = computed<DTLineChartPoint[]>(() => {
+  return trend.value.map((item) => ({
+    label: item.date.slice(5),
+    value: item.successCount + item.failureCount + (item.runningCount || 0)
+  }))
+})
+
+const statusPieData = computed<DTPieChartSegment[]>(() => {
+  return [
+    {
+      label: '成功',
+      value: trend.value.reduce((sum, item) => sum + item.successCount, 0),
+      color: 'var(--dt-color-success)'
+    },
+    {
+      label: '失败',
+      value: trend.value.reduce((sum, item) => sum + item.failureCount, 0),
+      color: 'var(--dt-color-danger)'
+    },
+    {
+      label: '执行中',
+      value: trend.value.reduce((sum, item) => sum + (item.runningCount || 0), 0),
+      color: 'var(--dt-color-primary)'
+    }
+  ]
+})
+
+const timelineItems = computed<DTFlowTimelineItem[]>(() => {
+  return recentActivities.value.map((item) => ({
+    title: item.title,
+    description: item.taskCode || item.message || '采集任务已进入执行链路',
+    time: item.time,
+    status: getStatusType(item.status)
+  }))
 })
 </script>
 
@@ -122,32 +165,11 @@ onMounted(() => {
 
       <section class="overview-layout">
         <DTCard title="执行趋势">
-          <div v-if="trend.length" class="trend-chart">
-            <div
-              v-for="item in trend"
-              :key="item.date"
-              class="trend-chart__item"
-            >
-              <div class="trend-chart__bars">
-                <span
-                  class="is-success"
-                  :style="{ height: `${Math.max(8, (item.successCount / maxTrendValue) * 160)}px` }"
-                  :title="`成功 ${item.successCount}`"
-                />
-                <span
-                  class="is-failed"
-                  :style="{ height: `${Math.max(8, (item.failureCount / maxTrendValue) * 160)}px` }"
-                  :title="`失败 ${item.failureCount}`"
-                />
-                <span
-                  class="is-running"
-                  :style="{ height: `${Math.max(8, ((item.runningCount || 0) / maxTrendValue) * 160)}px` }"
-                  :title="`执行中 ${item.runningCount || 0}`"
-                />
-              </div>
-              <strong>{{ item.date.slice(5) }}</strong>
-            </div>
-          </div>
+          <DTLineChart
+            v-if="trendLineData.length"
+            :data="trendLineData"
+            :height="240"
+          />
           <DTEmpty v-else size="sm" title="暂无趋势数据" />
         </DTCard>
 
@@ -164,6 +186,26 @@ onMounted(() => {
               <p>Mock 数据已覆盖配置、分组、任务、任务日志和过程明细，便于前端独立联调。</p>
             </div>
           </div>
+        </DTCard>
+      </section>
+
+      <section class="overview-layout">
+        <DTCard title="状态分布">
+          <DTPieChart
+            v-if="trend.length"
+            :data="statusPieData"
+            center-label="执行总数"
+            :center-value="stats.totalTasks ?? 0"
+          />
+          <DTEmpty v-else size="sm" title="暂无状态数据" />
+        </DTCard>
+
+        <DTCard title="采集时序流">
+          <DTFlowTimeline
+            v-if="timelineItems.length"
+            :items="timelineItems"
+          />
+          <DTEmpty v-else size="sm" title="暂无时序数据" />
         </DTCard>
       </section>
 
@@ -243,51 +285,6 @@ onMounted(() => {
   display: grid;
   grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.8fr);
   gap: var(--dt-space-4);
-}
-
-.trend-chart {
-  display: flex;
-  min-height: 220px;
-  align-items: end;
-  gap: var(--dt-space-4);
-  overflow-x: auto;
-  padding-top: var(--dt-space-4);
-}
-
-.trend-chart__item {
-  display: grid;
-  min-width: 74px;
-  gap: var(--dt-space-2);
-  justify-items: center;
-}
-
-.trend-chart__bars {
-  display: flex;
-  height: 170px;
-  align-items: end;
-  gap: 5px;
-}
-
-.trend-chart__bars span {
-  width: 12px;
-  border-radius: 999px 999px 0 0;
-}
-
-.trend-chart__bars .is-success {
-  background: var(--dt-color-success);
-}
-
-.trend-chart__bars .is-failed {
-  background: var(--dt-color-danger);
-}
-
-.trend-chart__bars .is-running {
-  background: var(--dt-color-primary);
-}
-
-.trend-chart__item strong {
-  color: var(--dt-text-muted);
-  font-size: 12px;
 }
 
 .system-status {

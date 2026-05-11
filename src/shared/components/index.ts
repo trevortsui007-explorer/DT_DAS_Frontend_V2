@@ -11,6 +11,9 @@ export { default as DTLoading } from './DTLoading'
 export { default as DTTable } from './DTTable'
 export { default as DTPagination } from './DTPagination'
 export { default as DTConfirm } from './DTConfirm'
+export { default as DTFlowTimeline } from './DTFlowTimeline'
+export { default as DTLineChart } from './DTLineChart'
+export { default as DTPieChart } from './DTPieChart'
 
 export {
   DTForm,
@@ -33,6 +36,18 @@ export type {
   DTTableRow,
   PaginationConfig
 } from './DTTable'
+
+export type {
+  DTFlowTimelineItem
+} from './DTFlowTimeline'
+
+export type {
+  DTLineChartPoint
+} from './DTLineChart'
+
+export type {
+  DTPieChartSegment
+} from './DTPieChart'
 
 export type {
   DTFormContext,
