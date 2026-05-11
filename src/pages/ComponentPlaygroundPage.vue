@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 
 import {
   DTButton,
@@ -23,335 +23,146 @@ import type {
   DTSelectValue,
   DTTableColumn,
   DTTableRow,
-  PaginationConfig 
+  PaginationConfig
 } from '@/shared/components'
 
 import { confirm, message } from '@/shared/composables'
 
+const keyword = ref('')
+const status = ref<DTSelectValue | ''>('enabled')
 const modalOpen = ref(false)
 const drawerOpen = ref(false)
 const saving = ref(false)
-
-const keyword = ref('')
-const status = ref<DTSelectValue | ''>('')
-
 const tableLoading = ref(false)
-const tableShowEmpty = ref(false)
 
-const tablePagination = ref<PaginationConfig>({
+const pagination = ref<PaginationConfig>({
   page: 1,
   pageSize: 10,
   total: 36,
-  pageSizes: [10, 20, 50, 100],
+  pageSizes: [10, 20, 50],
   showPageSize: true,
   showTotal: true
 })
 
 const statusOptions: DTSelectOption[] = [
-  {
-    label: '全部状态',
-    value: 'all'
-  },
-  {
-    label: '启用',
-    value: 'enabled'
-  },
-  {
-    label: '禁用',
-    value: 'disabled'
-  }
+  { label: '全部状态', value: 'all' },
+  { label: '启用', value: 'enabled' },
+  { label: '禁用', value: 'disabled' }
 ]
 
 const tableColumns: DTTableColumn[] = [
-  {
-    key: 'selection',
-    type: 'selection',
-    width: 52,
-    align: 'center',
-    fixed: 'left'
-  },
-  {
-    key: 'expand',
-    type: 'expand',
-    width: 52,
-    align: 'center',
-    fixed: 'left'
-  },
-  {
-    key: 'name',
-    title: '配置名称',
-    minWidth: 220,
-    fixed: 'left',
-    sortable: true,
-    showOverflowTooltip: true
-  },
-  {
-    key: 'targetTable',
-    title: '目标表',
-    minWidth: 180,
-    sortable: 'custom',
-    showOverflowTooltip: true
-  },
-  {
-    key: 'owner.name',
-    title: '负责人',
-    minWidth: 120,
-    align: 'center'
-  },
-  {
-    key: 'status',
-    title: '状态',
-    width: 100,
-    align: 'center'
-  },
-  {
-    key: 'lastRunTime',
-    title: '最近执行时间',
-    minWidth: 180,
-    sortable: true
-  },
-  {
-    key: 'remark',
-    title: '备注',
-    minWidth: 260,
-    showOverflowTooltip: true
-  },
-  {
-    key: 'actions',
-    title: '操作',
-    width: 160,
-    align: 'center',
-    fixed: 'right'
-  }
+  { key: 'selection', type: 'selection', width: 52, align: 'center', fixed: 'left' },
+  { key: 'name', title: '配置名称', minWidth: 180, fixed: 'left', sortable: true, showOverflowTooltip: true },
+  { key: 'targetTable', title: '目标表', minWidth: 160, showOverflowTooltip: true },
+  { key: 'status', title: '状态', width: 100, align: 'center' },
+  { key: 'lastRunTime', title: '最近执行时间', minWidth: 180 },
+  { key: 'actions', title: '操作', width: 140, align: 'center', fixed: 'right' }
 ]
 
-const childTableColumns: DTTableColumn[] = [
-  {
-    key: 'fieldName',
-    title: '字段名称',
-    minWidth: 160
-  },
-  {
-    key: 'sourceField',
-    title: '来源字段',
-    minWidth: 160
-  },
-  {
-    key: 'targetField',
-    title: '目标字段',
-    minWidth: 160
-  },
-  {
-    key: 'dataType',
-    title: '数据类型',
-    width: 120,
-    align: 'center'
-  },
-  {
-    key: 'required',
-    title: '是否必填',
-    width: 120,
-    align: 'center'
-  },
-  {
-    key: 'remark',
-    title: '说明',
-    minWidth: 220,
-    showOverflowTooltip: true
-  }
-]
-
-const tableRawData: DTTableRow[] = [
+const tableData: DTTableRow[] = [
   {
     id: 1,
-    name: 'MES 数据采集配置',
-    targetTable: 'DA_MES_Data',
-    owner: {
-      name: '张工'
-    },
+    name: 'Mason_Test',
+    targetTable: 'MasonElectricMeasurementLogFiles_BAK',
     status: 'enabled',
-    lastRunTime: '2026-04-29 08:30:00',
-    remark: '用于采集 MES 侧核心生产数据，字段较多时会触发溢出省略展示。',
-    children: [
-      {
-        id: '1-1',
-        fieldName: '批次号',
-        sourceField: 'LotNo',
-        targetField: 'lot_no',
-        dataType: 'varchar',
-        required: true,
-        remark: '生产批次唯一标识'
-      },
-      {
-        id: '1-2',
-        fieldName: '产品型号',
-        sourceField: 'ProdNo',
-        targetField: 'prod_no',
-        dataType: 'varchar',
-        required: true,
-        remark: '用于关联产品主数据'
-      },
-      {
-        id: '1-3',
-        fieldName: '创建时间',
-        sourceField: 'CreateTime',
-        targetField: 'create_time',
-        dataType: 'datetime',
-        required: false,
-        remark: '来源系统记录创建时间'
-      }
-    ]
+    lastRunTime: '2026-05-10 09:00:00'
   },
   {
     id: 2,
-    name: 'WIP Lot 数据配置',
-    targetTable: 'QA_UBWipLot',
-    owner: {
-      name: 'Lee'
-    },
+    name: 'Test_Device_3',
+    targetTable: 'Target_Data_Table',
     status: 'enabled',
-    lastRunTime: '2026-04-29 09:10:00',
-    remark: '用于同步 WIP 在制批次数据。',
-    children: [
-      {
-        id: '2-1',
-        fieldName: '批次号',
-        sourceField: 'LotNo',
-        targetField: 'lotno',
-        dataType: 'varchar',
-        required: true,
-        remark: '用于判断当前 WIP 批次'
-      },
-      {
-        id: '2-2',
-        fieldName: '站点',
-        sourceField: 'StationCode',
-        targetField: 'station_code',
-        dataType: 'varchar',
-        required: false,
-        remark: '当前批次所在工序站点'
-      }
-    ]
+    lastRunTime: '2026-05-07 18:05:48'
   },
   {
     id: 3,
-    name: 'Scrap 数据配置',
-    targetTable: 'DA_Scrap_Data',
-    owner: {
-      name: '王工'
-    },
+    name: 'Test_New_Version',
+    targetTable: 'TestTable',
     status: 'disabled',
-    lastRunTime: '-',
-    remark: '当前配置已停用，不参与自动任务执行。',
-    children: []
-  },
-  {
-    id: 4,
-    name: 'OQC 检验结果同步配置',
-    targetTable: 'QA_OQC_Result',
-    owner: {
-      name: 'Trevor'
-    },
-    status: 'enabled',
-    lastRunTime: '2026-04-30 10:20:00',
-    remark: '测试固定列、排序、展开行、多选和分页联动。',
-    children: [
-      {
-        id: '4-1',
-        fieldName: '检验结果',
-        sourceField: 'FinalResult',
-        targetField: 'final_result',
-        dataType: 'varchar',
-        required: true,
-        remark: 'OQC 最终判定结果'
-      },
-      {
-        id: '4-2',
-        fieldName: '检验时间',
-        sourceField: 'CheckTime',
-        targetField: 'check_time',
-        dataType: 'datetime',
-        required: false,
-        remark: 'OQC 检验完成时间'
-      }
-    ]
+    lastRunTime: '-'
   }
 ]
 
-const tableData = computed(() => {
-  return tableShowEmpty.value ? [] : tableRawData
-})
+const examples = {
+  button: `<DTButton>Default</DTButton>
+<DTButton type="primary">Primary</DTButton>
+<DTButton type="danger" disabled>Disabled</DTButton>`,
+  tag: `<DTTag type="success">启用</DTTag>
+<DTTag type="warning">执行中</DTTag>
+<DTTag type="danger">失败</DTTag>`,
+  form: `<DTForm label-position="top">
+  <DTFormItem label="配置名称" required>
+    <DTInput v-model="keyword" placeholder="请输入配置名称" clearable />
+  </DTFormItem>
 
-function getTableText(row: DTTableRow, key: string) {
-  const value = key.split('.').reduce<any>((acc, cur) => acc?.[cur], row)
-  return value === null || value === undefined || value === '' ? '-' : String(value)
+  <DTFormItem label="状态">
+    <DTSelect v-model="status" :options="statusOptions" clearable />
+  </DTFormItem>
+</DTForm>`,
+  table: `<DTTable
+  :columns="tableColumns"
+  :data="tableData"
+  row-key="id"
+  border
+  :pagination="pagination"
+  @selection-change="handleSelectionChange"
+>
+  <template #cell-status="{ value }">
+    <DTTag :type="value === 'enabled' ? 'success' : 'info'">
+      {{ value === 'enabled' ? '启用' : '禁用' }}
+    </DTTag>
+  </template>
+</DTTable>`,
+  state: `<DTEmpty title="暂无数据" description="当前筛选条件下没有记录。" />
+<DTLoading text="正在加载数据..." />`,
+  feedback: `message.success('保存成功')
+
+const ok = await confirm({
+  title: '确认删除',
+  content: '删除后不可恢复，是否继续？',
+  type: 'danger',
+  confirmText: '删除'
+})`,
+  modal: `<DTModal
+  v-model:open="modalOpen"
+  title="编辑配置"
+  confirm-text="保存"
+  :loading="saving"
+  @confirm="handleSave"
+>
+  <DTInput v-model="keyword" placeholder="请输入配置名称" />
+</DTModal>`,
+  drawer: `<DTDrawer
+  v-model:open="drawerOpen"
+  title="执行详情"
+  width="640px"
+  show-footer
+>
+  <DTCard title="明细">...</DTCard>
+</DTDrawer>`,
+  pagination: `<DTPagination
+  :page="1"
+  :page-size="10"
+  :total="120"
+  @change="handlePageChange"
+/>`
 }
 
-function handleRowClick(row: DTTableRow, index: number) {
-  message.info(`点击了第 ${index + 1} 行：${getTableText(row, 'name')}`)
+function showLoadingMessage() {
+  const close = message.loading('正在处理请求...')
+
+  window.setTimeout(() => {
+    close()
+    message.success('处理完成')
+  }, 900)
 }
 
-function handleSelectionChange(selectedRows: DTTableRow[]) {
-  message.info(`已选择 ${selectedRows.length} 条数据`)
-}
-
-function handleSortChange(payload: {
-  column: DTTableColumn
-  prop: string
-  order: 'asc' | 'desc' | null
-}) {
-  message.info(`排序变化：${payload.prop} / ${payload.order || '取消排序'}`)
-}
-
-function handleTablePaginationUpdate(config: PaginationConfig) {
-  tablePagination.value = config
-}
-
-function handleTablePageChange(page: number, pageSize: number) {
-  message.info(`分页变化：第 ${page} 页 / ${pageSize} 条`)
-}
-
-function toggleTableLoading() {
+function simulateTableLoading() {
   tableLoading.value = true
 
   window.setTimeout(() => {
     tableLoading.value = false
-    message.success('表格加载完成')
-  }, 1000)
-}
-
-function toggleTableEmpty() {
-  tableShowEmpty.value = !tableShowEmpty.value
-}
-
-function handleShowMessage(type: 'success' | 'info' | 'warning' | 'error' | 'loading') {
-  if (type === 'loading') {
-    const close = message.loading('正在处理请求...')
-
-    window.setTimeout(() => {
-      close()
-      message.success('处理完成')
-    }, 1200)
-
-    return
-  }
-
-  const textMap = {
-    success: '操作成功',
-    info: '这是一条提示信息',
-    warning: '请注意当前操作',
-    error: '操作失败，请稍后重试'
-  }
-
-  message[type](textMap[type])
-}
-
-function handleOpenModal() {
-  modalOpen.value = true
-}
-
-function handleOpenDrawer() {
-  drawerOpen.value = true
+  }, 900)
 }
 
 function handleSave() {
@@ -361,8 +172,8 @@ function handleSave() {
     saving.value = false
     modalOpen.value = false
     drawerOpen.value = false
-    message.success('模拟保存成功')
-  }, 1000)
+    message.success('保存成功')
+  }, 900)
 }
 
 async function handleConfirmDanger() {
@@ -373,16 +184,21 @@ async function handleConfirmDanger() {
     confirmText: '删除'
   })
 
-  if (!ok) {
-    message.info('已取消删除')
-    return
-  }
-
-  message.success('模拟删除成功')
+  message[ok ? 'success' : 'info'](ok ? '已删除' : '已取消')
 }
 
-function handlePaginationChange(payload: { page: number; pageSize: number }) {
-  message.info(`分页变化：第 ${payload.page} 页 / ${payload.pageSize} 条`)
+function handleSelectionChange(rows: DTTableRow[]) {
+  message.info(`已选择 ${rows.length} 条`)
+}
+
+function handlePageChange(payload: { page: number; pageSize: number }) {
+  pagination.value = {
+    ...pagination.value,
+    page: payload.page,
+    pageSize: payload.pageSize
+  }
+
+  message.info(`第 ${payload.page} 页，每页 ${payload.pageSize} 条`)
 }
 </script>
 
@@ -391,177 +207,93 @@ function handlePaginationChange(payload: { page: number; pageSize: number }) {
     <section class="page-toolbar">
       <div>
         <h2>DT Components Playground</h2>
-        <p>用于集中测试和展示 DT 基础组件，避免污染业务页面。</p>
-      </div>
-
-      <div class="playground-actions">
-        <DTButton @click="handleOpenDrawer">
-          打开抽屉
-        </DTButton>
-
-        <DTButton @click="handleOpenModal">
-          打开弹窗
-        </DTButton>
-
-        <DTButton type="danger" @click="handleConfirmDanger">
-          删除确认
-        </DTButton>
+        <p>按“效果 + 代码”展示 DT 组件的常用写法，便于业务页面直接复用。</p>
       </div>
     </section>
 
-    <DTCard title="Button">
-      <div class="component-row">
-        <DTButton>Default</DTButton>
-        <DTButton type="primary">Primary</DTButton>
-        <DTButton type="success">Success</DTButton>
-        <DTButton type="warning">Warning</DTButton>
-        <DTButton type="danger">Danger</DTButton>
-        <DTButton disabled>Disabled</DTButton>
-      </div>
+    <div class="playground-grid">
+      <DTCard title="Button 按钮">
+        <div class="demo-panel">
+          <div class="component-row">
+            <DTButton>Default</DTButton>
+            <DTButton type="primary">Primary</DTButton>
+            <DTButton type="success">Success</DTButton>
+            <DTButton type="warning">Warning</DTButton>
+            <DTButton type="danger">Danger</DTButton>
+            <DTButton disabled>Disabled</DTButton>
+          </div>
 
-      <div class="component-row">
-        <DTButton size="sm">Small</DTButton>
-        <DTButton size="md">Medium</DTButton>
-        <DTButton size="lg">Large</DTButton>
-      </div>
-    </DTCard>
-
-    <DTCard title="Tag">
-      <div class="component-row">
-        <DTTag>Default</DTTag>
-        <DTTag type="primary">Primary</DTTag>
-        <DTTag type="success">Success</DTTag>
-        <DTTag type="warning">Warning</DTTag>
-        <DTTag type="danger">Danger</DTTag>
-        <DTTag type="info">Info</DTTag>
-      </div>
-    </DTCard>
-
-    <DTCard title="Message">
-      <div class="component-row">
-        <DTButton type="success" @click="handleShowMessage('success')">
-          Success
-        </DTButton>
-
-        <DTButton @click="handleShowMessage('info')">
-          Info
-        </DTButton>
-
-        <DTButton type="warning" @click="handleShowMessage('warning')">
-          Warning
-        </DTButton>
-
-        <DTButton type="danger" @click="handleShowMessage('error')">
-          Error
-        </DTButton>
-
-        <DTButton type="primary" @click="handleShowMessage('loading')">
-          Loading
-        </DTButton>
-      </div>
-    </DTCard>
-
-    <DTCard title="Form">
-      <DTForm label-position="top">
-        <DTFormItem
-          label="配置名称"
-          required
-          :error="!keyword ? '配置名称不能为空' : ''"
-        >
-          <DTInput
-            v-model="keyword"
-            placeholder="请输入配置名称"
-            clearable
-            :error="!keyword"
-          />
-        </DTFormItem>
-
-        <DTFormItem
-          label="状态"
-          help="用于控制配置是否参与任务执行。"
-        >
-          <DTSelect
-            v-model="status"
-            :options="statusOptions"
-            placeholder="请选择状态"
-            clearable
-          />
-        </DTFormItem>
-
-        <DTFormItem label="文件路径">
-          <DTInput
-            v-model="keyword"
-            placeholder="请输入文件路径"
-            prefix-text="路径"
-            suffix-text=".xlsx"
-          />
-        </DTFormItem>
-      </DTForm>
-    </DTCard>
-
-    <DTCard title="Left Label Form">
-      <DTForm
-        label-position="left"
-        label-width="96px"
-      >
-        <DTFormItem
-          label="配置名称"
-          required
-        >
-          <DTInput
-            v-model="keyword"
-            placeholder="请输入配置名称"
-            clearable
-          />
-        </DTFormItem>
-
-        <DTFormItem label="状态">
-          <DTSelect
-            v-model="status"
-            :options="statusOptions"
-            placeholder="请选择状态"
-          />
-        </DTFormItem>
-      </DTForm>
-    </DTCard>
-
-    <DTCard title="State">
-      <div class="state-grid">
-        <div class="state-box">
-          <DTEmpty
-            title="暂无执行日志"
-            description="当前筛选条件下没有找到任务执行记录。"
-          >
-            <template #action>
-              <DTButton type="primary" size="sm">
-                重新加载
-              </DTButton>
-            </template>
-          </DTEmpty>
+          <pre><code>{{ examples.button }}</code></pre>
         </div>
+      </DTCard>
 
-        <div class="state-box">
-          <DTLoading text="正在加载任务数据..." />
+      <DTCard title="Tag 标签">
+        <div class="demo-panel">
+          <div class="component-row">
+            <DTTag>Default</DTTag>
+            <DTTag type="primary">Primary</DTTag>
+            <DTTag type="success">启用</DTTag>
+            <DTTag type="warning">执行中</DTTag>
+            <DTTag type="danger">失败</DTTag>
+            <DTTag type="info">禁用</DTTag>
+          </div>
+
+          <pre><code>{{ examples.tag }}</code></pre>
         </div>
-      </div>
-    </DTCard>
+      </DTCard>
 
-    <DTCard title="Table">
-      <div class="table-demo">
+      <DTCard title="Form 表单">
+        <div class="demo-panel">
+          <DTForm label-position="top">
+            <DTFormItem label="配置名称" required>
+              <DTInput
+                v-model="keyword"
+                placeholder="请输入配置名称"
+                clearable
+              />
+            </DTFormItem>
+
+            <DTFormItem label="状态">
+              <DTSelect
+                v-model="status"
+                :options="statusOptions"
+                placeholder="请选择状态"
+                clearable
+              />
+            </DTFormItem>
+          </DTForm>
+
+          <pre><code>{{ examples.form }}</code></pre>
+        </div>
+      </DTCard>
+
+      <DTCard title="State 状态">
+        <div class="demo-panel">
+          <div class="state-grid">
+            <DTEmpty
+              title="暂无执行日志"
+              description="当前筛选条件下没有记录。"
+            />
+
+            <div class="loading-box">
+              <DTLoading text="正在加载任务数据..." />
+            </div>
+          </div>
+
+          <pre><code>{{ examples.state }}</code></pre>
+        </div>
+      </DTCard>
+    </div>
+
+    <DTCard title="Table 表格">
+      <div class="demo-panel">
         <div class="component-row">
           <DTButton
             type="primary"
             size="sm"
-            @click="toggleTableLoading"
+            @click="simulateTableLoading"
           >
             模拟 Loading
-          </DTButton>
-
-          <DTButton
-            size="sm"
-            @click="toggleTableEmpty"
-          >
-            {{ tableShowEmpty ? '恢复数据' : '模拟空数据' }}
           </DTButton>
         </div>
 
@@ -569,25 +301,13 @@ function handlePaginationChange(payload: { page: number; pageSize: number }) {
           :columns="tableColumns"
           :data="tableData"
           row-key="id"
-          height="320px"
           border
           stripe
-          empty-text="当前没有配置数据"
           :loading="tableLoading"
-          :pagination="tablePagination"
-          @row-click="handleRowClick"
+          :pagination="pagination"
           @selection-change="handleSelectionChange"
-          @sort-change="handleSortChange"
-          @update:pagination="handleTablePaginationUpdate"
-          @page-change="handleTablePageChange"
+          @page-change="(page, pageSize) => handlePageChange({ page, pageSize })"
         >
-          <template #header-name="{ column }">
-            <span>{{ column.title }}</span>
-            <DTTag type="primary" size="sm">
-              重点
-            </DTTag>
-          </template>
-
           <template #cell-status="{ value }">
             <DTTag :type="value === 'enabled' ? 'success' : 'info'">
               {{ value === 'enabled' ? '启用' : '禁用' }}
@@ -598,7 +318,7 @@ function handlePaginationChange(payload: { page: number; pageSize: number }) {
             <div class="table-actions">
               <DTButton
                 size="sm"
-                @click.stop="message.info(`查看：${getTableText(row, 'name')}`)"
+                @click.stop="message.info(`查看：${row.name}`)"
               >
                 查看
               </DTButton>
@@ -606,71 +326,101 @@ function handlePaginationChange(payload: { page: number; pageSize: number }) {
               <DTButton
                 size="sm"
                 type="primary"
-                @click.stop="message.success(`编辑：${getTableText(row, 'name')}`)"
+                @click.stop="message.success(`编辑：${row.name}`)"
               >
                 编辑
               </DTButton>
             </div>
           </template>
-
-          <template #expand="{ row }">
-            <div class="table-expand-table">
-              <DTTable
-                :columns="childTableColumns"
-                :data="Array.isArray(row.children) ? row.children : []"
-                row-key="id"
-                size="sm"
-                border
-                stripe
-                empty-text="当前配置暂无字段映射"
-              >
-                <template #cell-required="{ value }">
-                  <DTTag :type="value ? 'success' : 'info'">
-                    {{ value ? '是' : '否' }}
-                  </DTTag>
-                </template>
-              </DTTable>
-            </div>
-          </template>
         </DTTable>
+
+        <pre><code>{{ examples.table }}</code></pre>
       </div>
     </DTCard>
 
-    <DTCard title="Confirm Component">
-      <div class="component-row">
-        <DTConfirm />
-        <p class="playground-note">
-          DTConfirm 实际业务中主要通过 composable 调用：
-          <code>await confirm(...)</code>
-        </p>
-      </div>
-    </DTCard>
+    <div class="playground-grid">
+      <DTCard title="Feedback 反馈">
+        <div class="demo-panel">
+          <div class="component-row">
+            <DTButton type="success" @click="message.success('保存成功')">
+              Success
+            </DTButton>
+
+            <DTButton @click="message.info('普通提示')">
+              Info
+            </DTButton>
+
+            <DTButton type="warning" @click="message.warning('请注意当前操作')">
+              Warning
+            </DTButton>
+
+            <DTButton type="danger" @click="message.error('操作失败')">
+              Error
+            </DTButton>
+
+            <DTButton type="primary" @click="showLoadingMessage">
+              Loading
+            </DTButton>
+
+            <DTButton type="danger" @click="handleConfirmDanger">
+              Confirm
+            </DTButton>
+          </div>
+
+          <pre><code>{{ examples.feedback }}</code></pre>
+          <DTConfirm />
+        </div>
+      </DTCard>
+
+      <DTCard title="Pagination 分页">
+        <div class="demo-panel">
+          <DTPagination
+            :page="pagination.page"
+            :page-size="pagination.pageSize"
+            :total="pagination.total"
+            @change="handlePageChange"
+          />
+
+          <pre><code>{{ examples.pagination }}</code></pre>
+        </div>
+      </DTCard>
+    </div>
+
+    <div class="playground-grid">
+      <DTCard title="Modal 弹窗">
+        <div class="demo-panel">
+          <DTButton type="primary" @click="modalOpen = true">
+            打开 Modal
+          </DTButton>
+
+          <pre><code>{{ examples.modal }}</code></pre>
+        </div>
+      </DTCard>
+
+      <DTCard title="Drawer 抽屉">
+        <div class="demo-panel">
+          <DTButton type="primary" @click="drawerOpen = true">
+            打开 Drawer
+          </DTButton>
+
+          <pre><code>{{ examples.drawer }}</code></pre>
+        </div>
+      </DTCard>
+    </div>
 
     <DTModal
       v-model:open="modalOpen"
       title="DTModal 示例"
-      width="680px"
+      width="620px"
       confirm-text="保存"
       :loading="saving"
       @confirm="handleSave"
     >
       <DTForm label-position="top">
-        <DTFormItem
-          label="配置名称"
-          required
-        >
+        <DTFormItem label="配置名称">
           <DTInput
             v-model="keyword"
             placeholder="请输入配置名称"
-            clearable
-          />
-        </DTFormItem>
-
-        <DTFormItem label="状态">
-          <DTSelect
-            v-model="status"
-            :options="statusOptions"
-            placeholder="请选择状态"
             clearable
           />
         </DTFormItem>
@@ -690,41 +440,21 @@ function handlePaginationChange(payload: { page: number; pageSize: number }) {
         适合详情、日志、预览、辅助配置等场景。
       </template>
 
-      <div class="drawer-demo">
-        <DTCard title="详情信息">
-          <div class="detail-list">
-            <div class="detail-row">
-              <span>配置名称</span>
-              <strong>{{ keyword || 'MES 数据采集配置' }}</strong>
-            </div>
-
-            <div class="detail-row">
-              <span>状态</span>
-              <DTTag :type="status === 'disabled' ? 'info' : 'success'">
-                {{ status === 'disabled' ? '禁用' : '启用' }}
-              </DTTag>
-            </div>
+      <DTCard title="详情信息">
+        <div class="detail-list">
+          <div>
+            <span>配置名称</span>
+            <strong>{{ keyword || 'Mason_Test' }}</strong>
           </div>
-        </DTCard>
 
-        <DTCard title="编辑区域">
-          <DTForm label-position="top">
-            <DTFormItem label="配置名称">
-              <DTInput
-                v-model="keyword"
-                placeholder="请输入配置名称"
-              />
-            </DTFormItem>
-
-            <DTFormItem label="状态">
-              <DTSelect
-                v-model="status"
-                :options="statusOptions"
-              />
-            </DTFormItem>
-          </DTForm>
-        </DTCard>
-      </div>
+          <div>
+            <span>状态</span>
+            <DTTag :type="status === 'disabled' ? 'info' : 'success'">
+              {{ status === 'disabled' ? '禁用' : '启用' }}
+            </DTTag>
+          </div>
+        </div>
+      </DTCard>
     </DTDrawer>
   </div>
 </template>
@@ -734,11 +464,16 @@ function handlePaginationChange(payload: { page: number; pageSize: number }) {
   padding-bottom: var(--dt-space-8);
 }
 
-.playground-actions {
+.playground-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--dt-space-4);
+}
+
+.demo-panel {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--dt-space-3);
-  align-items: center;
+  flex-direction: column;
+  gap: var(--dt-space-4);
 }
 
 .component-row {
@@ -748,77 +483,64 @@ function handlePaginationChange(payload: { page: number; pageSize: number }) {
   align-items: center;
 }
 
+pre {
+  margin: 0;
+  overflow: auto;
+  padding: var(--dt-space-4);
+  border: 1px solid var(--dt-border-subtle);
+  border-radius: var(--dt-radius-md);
+  background: color-mix(in srgb, var(--dt-bg-muted) 70%, var(--dt-bg-surface));
+}
+
+code {
+  color: var(--dt-text-primary);
+  font-family: Consolas, Monaco, 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  white-space: pre;
+}
+
 .state-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--dt-space-4);
 }
 
-.state-box {
+.loading-box {
   position: relative;
-  min-height: 240px;
+  min-height: 180px;
   border: 1px dashed var(--dt-border-subtle);
   border-radius: var(--dt-radius-lg);
-}
-
-.table-demo {
-  display: flex;
-  flex-direction: column;
-  gap: var(--dt-space-4);
 }
 
 .table-actions {
   display: inline-flex;
   gap: var(--dt-space-2);
   justify-content: center;
-  align-items: center;
-}
-
-.drawer-demo {
-  display: flex;
-  flex-direction: column;
-  gap: var(--dt-space-4);
 }
 
 .detail-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: var(--dt-space-3);
 }
 
-.detail-row {
+.detail-list > div {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--dt-space-4);
+}
+
+.detail-list span {
   color: var(--dt-text-secondary);
 }
 
-.detail-row strong {
+.detail-list strong {
   color: var(--dt-text-primary);
-  font-weight: 600;
 }
 
-.playground-note {
-  margin: 0;
-  color: var(--dt-text-secondary);
-  line-height: 1.6;
-}
-
-.playground-note code {
-  padding: 2px 6px;
-  border-radius: var(--dt-radius-sm);
-  color: var(--dt-color-primary);
-  background: var(--dt-bg-muted);
-}
-
-.table-expand-table {
-  padding: var(--dt-space-1) var(--dt-space-1) var(--dt-space-1) var(--dt-space-8);
-  background: var(--dt-bg-muted);
-  border-radius: var(--dt-radius-md);
-}
-
-@media (max-width: 960px) {
+@media (max-width: 1100px) {
+  .playground-grid,
   .state-grid {
     grid-template-columns: 1fr;
   }
