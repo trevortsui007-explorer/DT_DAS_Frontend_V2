@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 
 import { DTButton, DTCard } from '@/shared/components'
 import { confirm, message } from '@/shared/composables'
+import { deferInitialLoad } from '@/shared/utils/defer'
 
 import {
   TaskBindGroupsDrawer,
@@ -53,7 +54,7 @@ const executingTaskIds = ref<Array<number | string>>([])
 const batchExecuting = ref(false)
 
 onMounted(() => {
-  loadTasks()
+  deferInitialLoad(loadTasks)
 })
 
 function handleCreate() {

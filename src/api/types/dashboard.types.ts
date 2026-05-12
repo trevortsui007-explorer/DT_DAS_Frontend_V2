@@ -2,6 +2,7 @@ export type OverviewTrendItem = {
   date: string
   successCount: number
   failureCount: number
+  runningCount?: number
 }
 
 export type OverviewActivityItem = {
@@ -10,6 +11,8 @@ export type OverviewActivityItem = {
   status: string
   time: string
   message?: string
+  taskCode?: string
+  triggerType?: string
 }
 
 export type OverviewStats = {
@@ -17,4 +20,6 @@ export type OverviewStats = {
   successRate?: number
   runningCount?: number
   failedCount?: number
+  todayTasks?: number
+  abnormalCount?: number
 }

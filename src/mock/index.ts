@@ -2,6 +2,7 @@ import type { AxiosRequestConfig } from 'axios'
 
 import { mockDashboard } from './handlers/dashboard.mock'
 import { mockConfigs } from './handlers/configs.mock'
+import { mockGroups } from './handlers/groups.mock'
 import { mockTasks } from './handlers/tasks.mock'
 import { mockLogs } from './handlers/logs.mock'
 
@@ -9,6 +10,7 @@ type MockHandler = (config: AxiosRequestConfig) => unknown | null
 
 const handlers: MockHandler[] = [
   mockDashboard,
+  mockGroups,
   mockConfigs,
   mockTasks,
   mockLogs

@@ -17,6 +17,7 @@ import {
   type ConfigGroupItem,
   type TaskItem
 } from '@/api'
+import { deferInitialLoad } from '@/shared/utils/defer'
 
 const props = withDefaults(
   defineProps<{
@@ -79,7 +80,7 @@ watch(
   () => [props.open, props.task?.id],
   () => {
     if (props.open) {
-      initDrawer()
+      deferInitialLoad(initDrawer)
     }
   },
   {

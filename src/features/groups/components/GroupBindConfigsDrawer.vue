@@ -33,6 +33,7 @@ import type {
 } from '@/shared/components'
 
 import { confirm, message } from '@/shared/composables'
+import { deferInitialLoad } from '@/shared/utils/defer'
 
 const props = withDefaults(
   defineProps<{
@@ -170,7 +171,7 @@ watch(
   () => props.open,
   (value) => {
     if (value) {
-      loadConfigs()
+      deferInitialLoad(loadConfigs)
     } else {
       keyword.value = ''
       selectedConfigs.value = []

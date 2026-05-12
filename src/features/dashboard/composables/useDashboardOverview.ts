@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+
 import {
   fetchOverviewActivities,
   fetchOverviewTrend,
@@ -11,49 +12,57 @@ export function useDashboardOverview() {
   const trend = ref<OverviewTrendItem[]>([])
   const activities = ref<OverviewActivityItem[]>([])
 
-  /**
-   * 汇总统计信息
-   * 优化：将三次遍历合并为一次 reduce 循环
-   */
+  const today = '2026-05-10'
+
   const stats = computed(() => {
     const totals = trend.value.reduce(
       (acc, item) => {
-        acc.totalTasks += item.successCount + item.failureCount
+        const totalOfDay = item.successCount + item.failureCount + (item.runningCount || 0)
+
+        acc.totalTasks += totalOfDay
         acc.successCount += item.successCount
         acc.failedCount += item.failureCount
+        acc.runningCount += item.runningCount || 0
+
+        if (item.date === today) {
+          acc.todayTasks = totalOfDay
+        }
+
         return acc
       },
-      { totalTasks: 0, successCount: 0, failedCount: 0 }
+      {
+        totalTasks: 0,
+        todayTasks: 0,
+        successCount: 0,
+        failedCount: 0,
+        runningCount: 0
+      }
     )
 
-    const successRate = totals.totalTasks > 0
-      ? Number(((totals.successCount / totals.totalTasks) * 100).toFixed(1))
+    const completed = totals.successCount + totals.failedCount
+    const successRate = completed > 0
+      ? Number(((totals.successCount / completed) * 100).toFixed(1))
       : 0
-
-    const runningCount = activities.value.filter(
-      (item) => item.status === 'Running'
-    ).length
 
     return {
       totalTasks: totals.totalTasks,
+      todayTasks: totals.todayTasks,
       successRate,
-      runningCount,
-      failedCount: totals.failedCount
+      runningCount: totals.runningCount,
+      failedCount: totals.failedCount,
+      abnormalCount: activities.value.filter((item) => item.status === 'Failed').length
     }
   })
 
-  /**
-   * 加载概览数据
-   */
+  const recentActivities = computed(() => activities.value.slice(0, 5))
+  const abnormalActivities = computed(() => activities.value.filter((item) => item.status === 'Failed').slice(0, 3))
+
   async function loadOverview() {
-    // 避免重复加载
     if (loading.value) return
-    
+
     loading.value = true
 
     try {
-      // 由于 request.ts 已经处理了类型扩展和 .data 拦截
-      // 这里的结果直接就是数组类型
       const [trendData, activityData] = await Promise.all([
         fetchOverviewTrend(),
         fetchOverviewActivities()
@@ -61,8 +70,6 @@ export function useDashboardOverview() {
 
       trend.value = trendData
       activities.value = activityData
-    } catch (error) {
-      console.error('Failed to load dashboard overview:', error)
     } finally {
       loading.value = false
     }
@@ -72,6 +79,8 @@ export function useDashboardOverview() {
     loading,
     trend,
     activities,
+    recentActivities,
+    abnormalActivities,
     stats,
     loadOverview
   }

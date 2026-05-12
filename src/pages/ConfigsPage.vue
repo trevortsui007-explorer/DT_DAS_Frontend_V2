@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 
 import { DTCard } from '@/shared/components'
 import { confirm, message } from '@/shared/composables'
+import { deferInitialLoad } from '@/shared/utils/defer'
 
 import {
   ConfigDetailDrawer,
@@ -44,7 +45,7 @@ const formMode = ref<ConfigFormMode>('create')
 const currentConfig = ref<FileConfigItem | FileConfigDetail | null>(null)
 
 onMounted(() => {
-  loadConfigs()
+  deferInitialLoad(loadConfigs)
 })
 
 function handleCreate() {
